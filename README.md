@@ -1,5 +1,13 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## SENITOR coding environment
+
+The Problem Bank supports an in-browser Monaco editor for C++ and Python. Drafts are stored per problem and language in the browser. Run checks public examples; Submit evaluates private test cases through Judge0 CE and records only the authenticated student's submission history.
+
+To enable code execution, configure `JUDGE0_API_KEY` and `JUDGE0_API_HOST=judge0-ce.p.rapidapi.com` on the server, plus `SUPABASE_SERVICE_ROLE_KEY` for trusted private-test access and submission writes. Never expose the service-role or Judge0 key to client code. Without those credentials, the editor remains available but execution is disabled.
+
+Apply the Phase 5.4 migration `supabase/migrations/20261101000400_add_coding_submissions.sql` after the Problem Bank migration, then rerun `supabase/seed_problems.sql` to populate starter code. See [AUTH_SETUP.md](./AUTH_SETUP.md) for the full migration order and environment setup.
+
 ## Getting Started
 
 First, run the development server:
