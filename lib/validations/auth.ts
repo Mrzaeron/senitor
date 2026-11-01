@@ -95,3 +95,28 @@ export const onboardingSchema = z.object({
 });
 
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
+
+export const profileSettingsSchema = z.object({
+  programmingLanguage: z.enum(["cpp", "python", "java"], {
+    message: "Select a supported programming language",
+  }),
+  experienceLevel: z.enum(["beginner", "intermediate", "advanced"], {
+    message: "Select an experience level",
+  }),
+  learningGoal: z.enum(
+    [
+      "interview_prep",
+      "competitive_programming",
+      "academic_exams",
+      "core_mastery",
+    ],
+    { message: "Select a learning goal" }
+  ),
+  dailyStudyTarget: z.coerce
+    .number()
+    .int()
+    .min(10, "Daily target must be at least 10 minutes")
+    .max(240, "Daily target cannot exceed 240 minutes"),
+});
+
+export type ProfileSettingsInput = z.infer<typeof profileSettingsSchema>;

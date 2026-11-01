@@ -16,6 +16,25 @@ export function logSupabaseQueryError(
   });
 }
 
+export async function measureServerData<T>(
+  route: string,
+  operation: string,
+  load: () => Promise<T>
+): Promise<T> {
+  const startedAt = performance.now();
+  try {
+    return await load();
+  } finally {
+    if (process.env.NODE_ENV === "development") {
+      console.info(
+        `[navigation] ${route} ${operation} ${Math.round(
+          performance.now() - startedAt
+        )}ms`
+      );
+    }
+  }
+}
+
 export function createTimedSupabaseFetch(scope: string): typeof fetch {
   if (process.env.NODE_ENV !== "development") return fetch;
 

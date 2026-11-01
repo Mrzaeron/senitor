@@ -42,14 +42,17 @@ For a fresh project, apply each migration in the Supabase SQL Editor in this ord
 4. `supabase/migrations/20261031233200_create_learning_progress.sql`
 5. `supabase/migrations/20261031234900_create_problem_bank.sql`
 6. `supabase/migrations/20261101000400_add_coding_submissions.sql`
-7. `supabase/seed_curriculum.sql`
-8. `supabase/seed_problems.sql`
+7. `supabase/migrations/20261101130000_create_study_sessions.sql`
+8. `supabase/seed_curriculum.sql`
+9. `supabase/seed_problems.sql`
 
 Do not run `supabase/schema.sql` as well as the initial profiles migration; it is an alternative initial profiles setup. If PostgREST still reports a table missing after applying migrations, refresh its schema cache from the SQL Editor with `NOTIFY pgrst, 'reload schema';` and retry.
 
 The seed is safe to rerun: topics, subtopics, and lessons are upserted by their slugs, and prerequisite relationships use conflict-safe inserts. Curriculum read access is limited to authenticated users and published records. Learning-progress records are isolated to the authenticated owner by Row Level Security.
 
 The problem bank seed upserts its 30 original problems and tags, adds sample cases from each problem's examples, and inserts a small set of private cases. The problem bank migration permits students to read only published problem content and sample cases; it grants no student write access.
+
+The study-session migration adds owner-scoped session and elapsed-time segment tables. Study time is recorded from server timestamps; an active session is automatically paused after 90 seconds without a browser heartbeat.
 
 ### Code execution configuration
 

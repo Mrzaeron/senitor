@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -16,6 +17,34 @@ export interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [userName, setUserName] = useState("Student");
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    const supabase = createClient();
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active || !session?.user) return;
+      const { user } = session;
+      const metadataName = user.user_metadata?.full_name;
+      setUserName(
+        typeof metadataName === "string" && metadataName.trim()
+          ? metadataName.trim()
+          : user.email?.split("@")[0] || "Student"
+      );
+      setUserEmail(user.email ?? "");
+    }).catch((error: unknown) => {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[navigation] local session display lookup failed", {
+          name: error instanceof Error ? error.name : "Unknown error",
+        });
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const toggleSidebar = useCallback(
     () => setSidebarCollapsed((prev) => !prev),
@@ -46,13 +75,20 @@ export function AppShell({ children }: AppShellProps) {
           <Sidebar
             collapsed={sidebarCollapsed}
             onToggle={toggleSidebar}
+            userName={userName}
+            userEmail={userEmail}
           />
         </Suspense>
       </div>
 
       {/* ── Mobile drawer ── */}
       <Suspense fallback={null}>
-        <MobileNav open={mobileNavOpen} onClose={closeMobileNav} />
+        <MobileNav
+          open={mobileNavOpen}
+          onClose={closeMobileNav}
+          userName={userName}
+          userEmail={userEmail}
+        />
       </Suspense>
 
       {/* ── Right column: Topbar + page content ── */}
@@ -65,7 +101,7 @@ export function AppShell({ children }: AppShellProps) {
             />
           }
         >
-          <Topbar onMenuOpen={openMobileNav} />
+          <Topbar onMenuOpen={openMobileNav} userName={userName} />
         </Suspense>
 
         {/* ── Main content area ── */}

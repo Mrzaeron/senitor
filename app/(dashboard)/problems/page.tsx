@@ -2,11 +2,13 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { ProblemCard, ProblemEmptyState, ProblemErrorState } from "@/components/problems/ProblemUI";
+import { ProblemFilters } from "@/components/problems/ProblemFilters";
 import {
   getProblemFilters,
   getPublishedProblems,
   ProblemDataError,
 } from "@/lib/problems/data";
+import { measureServerData } from "@/lib/supabase/diagnostics";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -43,16 +45,21 @@ async function loadProblemBank(filters: {
   page: number;
 }) {
   try {
-    const data = await Promise.all([
-      getProblemFilters(),
-      getPublishedProblems({
-        search: filters.q,
-        topicSlug: filters.topic,
-        difficulty: filters.difficulty,
-        tagSlugs: filters.tags,
-        page: filters.page,
-      }),
-    ]);
+    const data = await measureServerData(
+      "/problems",
+      "filters and result data",
+      () =>
+        Promise.all([
+          getProblemFilters(),
+          getPublishedProblems({
+            search: filters.q,
+            topicSlug: filters.topic,
+            difficulty: filters.difficulty,
+            tagSlugs: filters.tags,
+            page: filters.page,
+          }),
+        ])
+    );
     return { success: true as const, data };
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
@@ -118,82 +125,14 @@ async function ProblemBrowser({
           </p>
         </header>
 
-        <form
-          action="/problems"
-          method="get"
-          className="grid gap-3 rounded-xl border border-border bg-bg-card p-4 md:grid-cols-2 xl:grid-cols-5"
-        >
-          <label className="flex flex-col gap-1.5 text-xs font-medium text-text-secondary xl:col-span-2">
-            Search title
-            <input
-              type="search"
-              name="q"
-              maxLength={100}
-              defaultValue={q ?? ""}
-              placeholder="Search problems"
-              className="h-10 rounded-lg border border-border bg-bg-base px-3 text-sm text-text-primary outline-none focus:border-accent-primary"
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-xs font-medium text-text-secondary">
-            Topic
-            <select
-              name="topic"
-              defaultValue={topic ?? ""}
-              className="h-10 rounded-lg border border-border bg-bg-base px-3 text-sm text-text-primary outline-none focus:border-accent-primary"
-            >
-              <option value="">All topics</option>
-              {filters.topics.map((item) => (
-                <option key={item.id} value={item.slug}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1.5 text-xs font-medium text-text-secondary">
-            Difficulty
-            <select
-              name="difficulty"
-              defaultValue={difficulty ?? ""}
-              className="h-10 rounded-lg border border-border bg-bg-base px-3 text-sm text-text-primary outline-none focus:border-accent-primary"
-            >
-              <option value="">All levels</option>
-              {filters.difficulties.map((level) => (
-                <option key={level} value={level}>
-                  {level[0].toUpperCase() + level.slice(1)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1.5 text-xs font-medium text-text-secondary xl:col-span-2">
-            Tags (select multiple with Ctrl or Command)
-            <select
-              name="tag"
-              multiple
-              defaultValue={tags}
-              className="min-h-24 rounded-lg border border-border bg-bg-base px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-primary"
-            >
-              {filters.tags.map((tag) => (
-                <option key={tag.id} value={tag.slug}>
-                  {tag.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex items-end gap-2 xl:col-span-3">
-            <button
-              type="submit"
-              className="h-10 rounded-lg bg-accent-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-primary/90"
-            >
-              Apply filters
-            </button>
-            <Link
-              href="/problems"
-              className="inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm text-text-secondary transition-colors hover:text-text-primary"
-            >
-              Clear
-            </Link>
-          </div>
-        </form>
+        <ProblemFilters
+          key={q ?? ""}
+          filters={filters}
+          search={q}
+          topic={topic}
+          difficulty={difficulty}
+          tags={tags}
+        />
 
         <section aria-label="Problems">
           <p className="mb-4 text-sm text-text-secondary" aria-live="polite">

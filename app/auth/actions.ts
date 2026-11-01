@@ -17,10 +17,13 @@ import {
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { cache } from "react";
 import {
   getAuthenticatedClient,
   SupabaseAuthenticationError,
 } from "@/lib/supabase/authenticated-client";
+import { logSupabaseQueryError } from "@/lib/supabase/diagnostics";
+import type { ProfileSettingsData } from "@/types/user";
 
 export interface ActionResult<T = unknown> {
   success: boolean;
@@ -315,7 +318,7 @@ export async function submitOnboardingAction(
 /**
  * Get current user profile
  */
-export async function getUserProfile() {
+const readUserProfile = cache(async (): Promise<ProfileSettingsData | null> => {
   let supabase: Awaited<ReturnType<typeof createClient>>;
   let userId: string;
   try {
@@ -327,13 +330,22 @@ export async function getUserProfile() {
     throw error;
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, programming_language, dsa_experience, learning_goal, daily_study_target, onboarding_completed"
+      "id, full_name, programming_language, programming_experience, dsa_experience, learning_goal, daily_study_target, onboarding_completed"
     )
     .eq("id", userId)
-    .single();
+    .maybeSingle();
 
-  return profile;
+  if (error) {
+    logSupabaseQueryError("profile", "loading the current profile", error);
+    throw new Error("Profile settings could not be loaded. Please try again.");
+  }
+
+  return profile as ProfileSettingsData | null;
+});
+
+export async function getUserProfile(): Promise<ProfileSettingsData | null> {
+  return readUserProfile();
 }

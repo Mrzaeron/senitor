@@ -21,6 +21,18 @@ export interface UserProfile {
   updated_at: string;
 }
 
+export type ProfileSettingsData = Pick<
+  UserProfile,
+  | "id"
+  | "full_name"
+  | "programming_language"
+  | "programming_experience"
+  | "dsa_experience"
+  | "learning_goal"
+  | "daily_study_target"
+  | "onboarding_completed"
+>;
+
 export interface OnboardingFormValues {
   fullName: string;
   programmingLanguage: ProgrammingLanguage;

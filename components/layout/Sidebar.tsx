@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
+import { memo } from "react";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -19,7 +19,6 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Separator } from "@/components/ui/Separator";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { logoutAction } from "@/app/auth/actions";
-import { createClient } from "@/lib/supabase/client";
 
 // ─── Navigation config ────────────────────────────────────────────────────────
 
@@ -43,6 +42,8 @@ export const NAV_ITEMS: NavItem[] = [
 export interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  userName: string;
+  userEmail: string;
   /** Mobile: always expanded; collapse toggle hidden */
   isMobile?: boolean;
 }
@@ -111,34 +112,14 @@ function NavLink({
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
-export function Sidebar({ collapsed, onToggle, isMobile = false }: SidebarProps) {
+export const Sidebar = memo(function Sidebar({
+  collapsed,
+  onToggle,
+  userName,
+  userEmail,
+  isMobile = false,
+}: SidebarProps) {
   const pathname = usePathname();
-  const [userName, setUserName] = useState("Student");
-  const [userEmail, setUserEmail] = useState("");
-
-  useEffect(() => {
-    const supabase = createClient();
-    void supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
-        const user = session?.user;
-        if (!user) return;
-
-        const fullName =
-          (user.user_metadata?.full_name as string) ||
-          user.email?.split("@")[0] ||
-          "Student";
-        setUserName(fullName);
-        setUserEmail(user.email ?? "");
-      })
-      .catch((error: unknown) => {
-        if (process.env.NODE_ENV === "development") {
-          console.error("[navigation] local session read failed", {
-            name: error instanceof Error ? error.name : "Unknown error",
-          });
-        }
-      });
-  }, []);
 
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
@@ -270,4 +251,4 @@ export function Sidebar({ collapsed, onToggle, isMobile = false }: SidebarProps)
       )}
     </aside>
   );
-}
+});

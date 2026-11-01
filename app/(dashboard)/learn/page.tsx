@@ -18,6 +18,7 @@ import {
 } from "@/lib/learning/progress";
 import type { OverallLearningProgress } from "@/types/learning-progress";
 import type { TopicCatalogItem } from "@/types/curriculum";
+import { measureServerData } from "@/lib/supabase/diagnostics";
 
 export default function LearnPage() {
   return (
@@ -117,7 +118,11 @@ async function loadTopics(): Promise<
   | { error: string }
 > {
   try {
-    return await getLearningOverview();
+    return await measureServerData(
+      "/learn",
+      "curriculum and progress data",
+      getLearningOverview
+    );
   } catch (error) {
     if (error instanceof LearningProgressError) {
       return { error: error.message };

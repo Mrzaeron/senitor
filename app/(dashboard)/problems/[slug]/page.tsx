@@ -12,6 +12,7 @@ import { LessonContent } from "@/components/learn/LessonContent";
 import { Card } from "@/components/ui/Card";
 import { getProblemBySlug, ProblemDataError } from "@/lib/problems/data";
 import { getProblemSubmissionHistory } from "@/lib/problems/submissions";
+import { measureServerData } from "@/lib/supabase/diagnostics";
 
 async function ProblemDetails({
   params,
@@ -23,7 +24,11 @@ async function ProblemDetails({
 
   let problem: Awaited<ReturnType<typeof getProblemBySlug>>;
   try {
-    problem = await getProblemBySlug(slug);
+    problem = await measureServerData(
+      "/problems/[slug]",
+      "problem and related content",
+      () => getProblemBySlug(slug)
+    );
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error("[problem-bank] problem detail failed unexpectedly", {
@@ -46,7 +51,11 @@ async function ProblemDetails({
   let history: Awaited<ReturnType<typeof getProblemSubmissionHistory>> = [];
   let historyError: string | undefined;
   try {
-    history = await getProblemSubmissionHistory(problem.id);
+    history = await measureServerData(
+      "/problems/[slug]",
+      "submission history",
+      () => getProblemSubmissionHistory(problem.id)
+    );
   } catch (error) {
     console.error("[problem-submissions] problem page history failed");
     historyError =

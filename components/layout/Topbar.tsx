@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Search, Bell, Menu } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { NAV_ITEMS } from "@/components/layout/Sidebar";
@@ -10,11 +11,15 @@ import { usePathname } from "next/navigation";
 export interface TopbarProps {
   /** Callback to open the mobile drawer */
   onMenuOpen: () => void;
+  userName: string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function Topbar({ onMenuOpen }: TopbarProps) {
+export const Topbar = memo(function Topbar({
+  onMenuOpen,
+  userName,
+}: TopbarProps) {
   const pathname = usePathname();
 
   // Derive page title from current route
@@ -102,9 +107,9 @@ export function Topbar({ onMenuOpen }: TopbarProps) {
             "focus-visible:ring-offset-bg-secondary",
           ].join(" ")}
         >
-          <Avatar fallback="Daksh Sharma" size="sm" status="online" />
+          <Avatar fallback={userName} size="sm" status="online" />
         </button>
       </div>
     </header>
   );
-}
+});

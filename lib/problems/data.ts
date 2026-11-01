@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { logSupabaseQueryError } from "@/lib/supabase/diagnostics";
@@ -46,14 +47,14 @@ export class ProblemDataError extends Error {
   }
 }
 
-async function getProblemClient() {
+const getProblemClient = cache(async () => {
   if (!isSupabaseConfigured()) {
     throw new ProblemDataError(
       "The problem bank is not configured. Configure Supabase and apply the problem bank migration."
     );
   }
   return createClient();
-}
+});
 
 function throwQueryError(
   operation: string,
@@ -117,40 +118,22 @@ async function getProblemTags(
 ): Promise<Map<string, ProblemTag[]>> {
   if (problemIds.length === 0) return new Map();
 
-  const { data: relations, error: relationError } = await supabase
+  const { data, error } = await supabase
     .from("problem_tag_relations")
-    .select("problem_id, tag_id")
+    .select("problem_id, problem_tags!inner(id, name, slug)")
     .in("problem_id", problemIds);
 
-  if (relationError) {
-    throwQueryError("loading problem tag relationships", relationError);
-  }
+  if (error) throwQueryError("loading problem tags", error);
 
-  const relationRows = (relations ?? []) as Array<{
+  const relationRows = (data ?? []) as unknown as Array<{
     problem_id: string;
-    tag_id: string;
+    problem_tags: ProblemTag;
   }>;
-  const tagIds = [...new Set(relationRows.map(({ tag_id }) => tag_id))];
-  if (tagIds.length === 0) return new Map();
-
-  const { data: tags, error: tagsError } = await supabase
-    .from("problem_tags")
-    .select("id, name, slug")
-    .in("id", tagIds)
-    .order("name");
-
-  if (tagsError) throwQueryError("loading problem tags", tagsError);
-
-  const tagById = new Map(
-    ((tags ?? []) as ProblemTag[]).map((tag) => [tag.id, tag])
-  );
   const tagsByProblem = new Map<string, ProblemTag[]>();
   for (const relation of relationRows) {
-    const tag = tagById.get(relation.tag_id);
-    if (!tag) continue;
-
+    if (!relation.problem_tags) continue;
     const problemTags = tagsByProblem.get(relation.problem_id) ?? [];
-    problemTags.push(tag);
+    problemTags.push(relation.problem_tags);
     tagsByProblem.set(relation.problem_id, problemTags);
   }
   return tagsByProblem;
@@ -219,21 +202,25 @@ export async function getPublishedProblems(
   const search = normalizeSearch(filters.search);
   const tagSlugs = [...new Set(filters.tagSlugs ?? [])].slice(0, 10);
 
-  let topicId: string | null = null;
-  if (filters.topicSlug) {
-    topicId = await getTopicIdBySlug(supabase, filters.topicSlug);
-    if (!topicId) return emptyPage(page, pageSize);
+  const [topicId, tagRows] = await Promise.all([
+    filters.topicSlug
+      ? getTopicIdBySlug(supabase, filters.topicSlug)
+      : Promise.resolve(null),
+    tagSlugs.length > 0
+      ? supabase
+          .from("problem_tags")
+          .select("id, slug")
+          .in("slug", tagSlugs)
+      : Promise.resolve(null),
+  ]);
+  if (filters.topicSlug && !topicId) return emptyPage(page, pageSize);
+  if (tagRows && tagRows.error) {
+    throwQueryError("loading selected tags", tagRows.error);
   }
 
   let problemIdsForTags: string[] | undefined;
-  if (tagSlugs.length > 0) {
-    const { data: tagRows, error: tagError } = await supabase
-      .from("problem_tags")
-      .select("id, slug")
-      .in("slug", tagSlugs);
-
-    if (tagError) throwQueryError("loading selected tags", tagError);
-    const tagIds = (tagRows ?? []).map((tag) => tag.id as string);
+  if (tagSlugs.length > 0 && tagRows) {
+    const tagIds = (tagRows.data ?? []).map((tag) => tag.id as string);
     if (tagIds.length !== tagSlugs.length) {
       return emptyPage(page, pageSize);
     }
@@ -421,13 +408,16 @@ export async function getProblemBySlug(
   if (error) throwQueryError("loading the problem", error);
   if (!data) return null;
 
-  const [problem] = await hydrateProblemList(supabase, [data as Problem]);
+  const [problemRows, relatedProblems] = await Promise.all([
+    hydrateProblemList(supabase, [data as Problem]),
+    getRelatedProblemsWithClient(
+      supabase,
+      { id: data.id, topic_id: data.topic_id },
+      4
+    ),
+  ]);
+  const [problem] = problemRows;
   if (!problem) return null;
 
-  const relatedProblems = await getRelatedProblemsWithClient(
-    supabase,
-    problem,
-    4
-  );
   return { ...problem, related_problems: relatedProblems };
 }

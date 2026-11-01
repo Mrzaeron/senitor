@@ -18,6 +18,9 @@ import {
   getOverallLearningProgress,
   LearningProgressError,
 } from "@/lib/learning/progress";
+import { getDailyStudySummary } from "@/lib/study/sessions";
+import { StudyTimer } from "@/components/dashboard/StudyTimer";
+import { measureServerData } from "@/lib/supabase/diagnostics";
 import { ArrowRight, BookOpen, Sparkles, Code2, Target, Clock } from "lucide-react";
 
 export default function DashboardPage() {
@@ -34,7 +37,23 @@ export default function DashboardPage() {
 }
 
 async function DashboardProfile() {
-  const profile = await getUserProfile();
+  const [profile, studySummary] = await measureServerData(
+    "/dashboard",
+    "profile and study-time data",
+    () =>
+      Promise.all([
+        getUserProfile(),
+        getDailyStudySummary().catch((error: unknown) => {
+          if (process.env.NODE_ENV === "development") {
+            console.error("[study-sessions] dashboard summary unavailable", {
+              name: error instanceof Error ? error.name : "Unknown error",
+              message: error instanceof Error ? error.message : "Unknown error",
+            });
+          }
+          return null;
+        }),
+      ])
+  );
 
   return (
     <>
@@ -73,7 +92,11 @@ async function DashboardProfile() {
                 <div>
                   <p className="text-xs text-text-muted">Language & Track</p>
                   <p className="text-sm font-semibold text-text-primary capitalize">
-                    {profile.programming_language || "C++"} ({profile.dsa_experience || "Beginner"})
+                    {profile.programming_language || "C++"} (
+                    {profile.programming_experience ||
+                      profile.dsa_experience ||
+                      "Beginner"}
+                    )
                   </p>
                 </div>
               </div>
@@ -93,12 +116,34 @@ async function DashboardProfile() {
                 <div>
                   <p className="text-xs text-text-muted">Daily Target</p>
                   <p className="text-sm font-semibold text-text-primary">
-                    {profile.daily_study_target || 30} mins / day
+                    {profile.daily_study_target ?? 30} mins / day
                   </p>
                 </div>
               </div>
             </div>
           </CardContent>
+        </Card>
+      )}
+
+      {studySummary ? (
+        <StudyTimer
+          key={[
+            studySummary.activeSession?.id ?? "none",
+            studySummary.activeSession?.status ?? "",
+            studySummary.todaySeconds,
+            studySummary.activeSession?.elapsedSeconds ?? 0,
+          ].join(":")}
+          initialSummary={studySummary}
+          targetMinutes={profile?.daily_study_target ?? null}
+        />
+      ) : (
+        <Card className="space-y-2 border-border bg-bg-card p-5">
+          <h3 className="font-semibold text-text-primary">
+            Study timer unavailable
+          </h3>
+          <p className="text-sm text-text-secondary">
+            Apply the study-session migration to record actual study time.
+          </p>
         </Card>
       )}
     </>
@@ -173,10 +218,16 @@ async function DashboardLearning() {
 
 async function loadDashboardLearning() {
   try {
-    const [progress, lastPosition] = await Promise.all([
-      getOverallLearningProgress(),
-      getLastLearningPosition(),
-    ]);
+    const result = await measureServerData(
+      "/dashboard",
+      "learning progress data",
+      () =>
+        Promise.all([
+          getOverallLearningProgress(),
+          getLastLearningPosition(),
+        ])
+    );
+    const [progress, lastPosition] = result;
     return { progress, lastPosition };
   } catch (error) {
     if (error instanceof LearningProgressError) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -10,11 +11,18 @@ import { usePathname } from "next/navigation";
 export interface MobileNavProps {
   open: boolean;
   onClose: () => void;
+  userName: string;
+  userEmail: string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function MobileNav({ open, onClose }: MobileNavProps) {
+export const MobileNav = memo(function MobileNav({
+  open,
+  onClose,
+  userName,
+  userEmail,
+}: MobileNavProps) {
   const pathname = usePathname();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -99,9 +107,11 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
         <Sidebar
           collapsed={false}
           onToggle={() => {}}
+          userName={userName}
+          userEmail={userEmail}
           isMobile
         />
       </div>
     </>
   );
-}
+});

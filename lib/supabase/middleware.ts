@@ -18,6 +18,7 @@ export async function updateSession(request: NextRequest) {
     "/learn",
     "/practice",
     "/ai-tutor",
+    "/problems",
     "/progress",
     "/profile",
     "/onboarding",
