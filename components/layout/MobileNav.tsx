@@ -2,7 +2,15 @@
 
 import { memo } from "react";
 import { useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import Link from "next/link";
+import {
+  BookOpen,
+  Code2,
+  LayoutDashboard,
+  TrendingUp,
+  User,
+  X,
+} from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { usePathname } from "next/navigation";
 
@@ -11,6 +19,7 @@ import { usePathname } from "next/navigation";
 export interface MobileNavProps {
   open: boolean;
   onClose: () => void;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
   userName: string;
   userEmail: string;
 }
@@ -20,11 +29,14 @@ export interface MobileNavProps {
 export const MobileNav = memo(function MobileNav({
   open,
   onClose,
+  triggerRef,
   userName,
   userEmail,
 }: MobileNavProps) {
   const pathname = usePathname();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const wasOpen = useRef(false);
 
   // Close drawer on any route change
   useEffect(() => {
@@ -36,18 +48,20 @@ export const MobileNav = memo(function MobileNav({
   useEffect(() => {
     if (open) {
       closeButtonRef.current?.focus();
+      wasOpen.current = true;
+    } else if (wasOpen.current) {
+      triggerRef.current?.focus();
+      wasOpen.current = false;
     }
-  }, [open]);
+  }, [open, triggerRef]);
 
   // Trap scroll on body while open
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 
@@ -61,8 +75,66 @@ export const MobileNav = memo(function MobileNav({
     return () => document.removeEventListener("keydown", handleKey);
   }, [open, onClose]);
 
+  function trapFocus(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Tab") return;
+    const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusable?.length) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  const primaryItems = [
+    { label: "Home", href: "/dashboard", icon: <LayoutDashboard size={18} aria-hidden /> },
+    { label: "Learn", href: "/learn", icon: <BookOpen size={18} aria-hidden /> },
+    { label: "Problems", href: "/problems", icon: <Code2 size={18} aria-hidden /> },
+    { label: "Progress", href: "/progress", icon: <TrendingUp size={18} aria-hidden /> },
+    { label: "Profile", href: "/profile", icon: <User size={18} aria-hidden /> },
+  ];
+
   return (
     <>
+      <nav
+        aria-label="Primary navigation"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg-secondary/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+      >
+        <ul className="grid h-16 grid-cols-5">
+          {primaryItems.map((item) => {
+            const active =
+              item.href === "/dashboard"
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
+            return (
+              <li key={item.href} className="min-w-0">
+                <Link
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={[
+                    "flex h-full flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-primary",
+                    active
+                      ? "text-accent-secondary"
+                      : "text-text-muted hover:text-text-primary",
+                  ].join(" ")}
+                >
+                  {item.icon}
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
       {/* ── Overlay ── */}
       <div
         aria-hidden="true"
@@ -76,11 +148,15 @@ export const MobileNav = memo(function MobileNav({
 
       {/* ── Drawer ── */}
       <div
+        ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
+        aria-hidden={!open}
+        inert={!open}
+        onKeyDown={trapFocus}
         className={[
-          "fixed inset-y-0 left-0 z-50 md:hidden",
+          "fixed inset-y-0 left-0 z-50 w-[min(17rem,85vw)] md:hidden",
           "flex flex-col",
           "transition-transform duration-300 ease-in-out",
           open ? "translate-x-0" : "-translate-x-full",
@@ -89,11 +165,12 @@ export const MobileNav = memo(function MobileNav({
         {/* Close button floats above the sidebar top-right */}
         <button
           ref={closeButtonRef}
+          type="button"
           onClick={onClose}
           aria-label="Close navigation menu"
           className={[
-            "absolute top-4 right-[-44px] z-10",
-            "flex h-9 w-9 items-center justify-center rounded-lg",
+            "absolute right-[-48px] top-[max(1rem,env(safe-area-inset-top))] z-10",
+            "flex h-11 w-11 items-center justify-center rounded-lg",
             "bg-bg-card border border-border",
             "text-text-muted hover:text-text-primary",
             "transition-colors duration-150",

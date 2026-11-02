@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Card } from "@/components/ui/Card";
 import {
   CurriculumEmptyState,
@@ -39,6 +40,7 @@ export default function SubtopicPage({ params }: SubtopicPageProps) {
 }
 
 async function SubtopicContent({ params }: SubtopicPageProps) {
+  await connection();
   const result = await loadSubtopic(params);
   if ("error" in result && typeof result.error === "string") {
     return result.errorType === "progress" ? (
@@ -57,14 +59,14 @@ async function SubtopicContent({ params }: SubtopicPageProps) {
       <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm">
         <Link
           href="/learn"
-          className="text-text-secondary transition-colors hover:text-text-primary"
+          className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-text-primary"
         >
           Learn DSA
         </Link>
         <span className="text-text-muted" aria-hidden>/</span>
         <Link
           href={`/learn/${context.topic.slug}`}
-          className="text-text-secondary transition-colors hover:text-text-primary"
+          className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-text-primary"
         >
           {context.topic.name}
         </Link>
@@ -176,7 +178,7 @@ async function SubtopicContent({ params }: SubtopicPageProps) {
 
       <Link
         href={`/learn/${context.topic.slug}`}
-        className="inline-flex w-fit items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
+        className="inline-flex min-h-11 w-fit items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
       >
         <ArrowLeft size={16} aria-hidden />
         Back to {context.topic.name}

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -33,10 +33,18 @@ export const metadata: Metadata = {
   keywords: ["DSA", "algorithms", "data structures", "learning", "AI tutor"],
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#09090B",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       /*
        * Font CSS variables are applied here so every descendant
        * (including Server Components rendered in parallel routes)
@@ -47,7 +55,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
        * antialiased → font smoothing
        * h-full      → allows full-height layouts
        */
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased bg-bg-base text-text-primary`}
+      className={`${inter.variable} ${jetbrainsMono.variable} min-h-full antialiased bg-bg-base text-text-primary`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

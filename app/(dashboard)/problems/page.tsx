@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { connection } from "next/server";
 import { z } from "zod";
 import { ProblemCard, ProblemEmptyState, ProblemErrorState } from "@/components/problems/ProblemUI";
 import { ProblemFilters } from "@/components/problems/ProblemFilters";
@@ -83,6 +84,7 @@ async function ProblemBrowser({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  await connection();
   const raw = await searchParams;
   const parsed = filtersSchema.safeParse({
     q: firstValue(raw.q),
@@ -164,7 +166,7 @@ async function ProblemBrowser({
               aria-disabled={results.page <= 1}
               tabIndex={results.page <= 1 ? -1 : undefined}
               href={buildPageHref({ q, topic, difficulty, tags }, results.page - 1)}
-              className={`rounded-lg border border-border px-4 py-2 text-sm ${
+              className={`inline-flex h-11 items-center rounded-lg border border-border px-4 text-sm ${
                 results.page <= 1
                   ? "pointer-events-none opacity-40"
                   : "text-text-secondary hover:text-text-primary"
@@ -179,7 +181,7 @@ async function ProblemBrowser({
               aria-disabled={results.page >= results.pageCount}
               tabIndex={results.page >= results.pageCount ? -1 : undefined}
               href={buildPageHref({ q, topic, difficulty, tags }, results.page + 1)}
-              className={`rounded-lg border border-border px-4 py-2 text-sm ${
+              className={`inline-flex h-11 items-center rounded-lg border border-border px-4 text-sm ${
                 results.page >= results.pageCount
                   ? "pointer-events-none opacity-40"
                   : "text-text-secondary hover:text-text-primary"

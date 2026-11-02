@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import Link from "next/link";
 import { Search, Bell, Menu } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { NAV_ITEMS } from "@/components/layout/Sidebar";
@@ -11,6 +12,7 @@ import { usePathname } from "next/navigation";
 export interface TopbarProps {
   /** Callback to open the mobile drawer */
   onMenuOpen: () => void;
+  menuButtonRef: React.RefObject<HTMLButtonElement | null>;
   userName: string;
 }
 
@@ -18,6 +20,7 @@ export interface TopbarProps {
 
 export const Topbar = memo(function Topbar({
   onMenuOpen,
+  menuButtonRef,
   userName,
 }: TopbarProps) {
   const pathname = usePathname();
@@ -33,16 +36,18 @@ export const Topbar = memo(function Topbar({
   return (
     <header
       className={[
-        "flex h-16 shrink-0 items-center gap-4 px-4 md:px-6",
+        "flex min-h-16 shrink-0 items-center gap-4 px-4 pt-[env(safe-area-inset-top)] md:px-6",
         "bg-bg-secondary border-b border-border",
       ].join(" ")}
     >
       {/* Mobile menu toggle */}
       <button
+        ref={menuButtonRef}
+        type="button"
         onClick={onMenuOpen}
         aria-label="Open navigation menu"
         className={[
-          "flex md:hidden items-center justify-center h-9 w-9 rounded-lg",
+          "flex md:hidden h-11 w-11 items-center justify-center rounded-lg",
           "text-text-muted hover:text-text-primary hover:bg-bg-overlay",
           "transition-colors duration-150",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary",
@@ -82,9 +87,10 @@ export const Topbar = memo(function Topbar({
 
         {/* Notification bell */}
         <button
+          type="button"
           aria-label="Notifications"
           className={[
-            "relative flex items-center justify-center h-9 w-9 rounded-lg",
+            "relative flex h-11 w-11 items-center justify-center rounded-lg",
             "text-text-muted hover:text-text-primary hover:bg-bg-overlay",
             "transition-colors duration-150",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary",
@@ -99,16 +105,17 @@ export const Topbar = memo(function Topbar({
         </button>
 
         {/* User avatar */}
-        <button
-          aria-label="Open user menu"
+        <Link
+          href="/profile"
+          aria-label="Open profile settings"
           className={[
-            "rounded-full focus-visible:outline-none focus-visible:ring-2",
+            "flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2",
             "focus-visible:ring-accent-primary focus-visible:ring-offset-2",
             "focus-visible:ring-offset-bg-secondary",
           ].join(" ")}
         >
           <Avatar fallback={userName} size="sm" status="online" />
-        </button>
+        </Link>
       </div>
     </header>
   );

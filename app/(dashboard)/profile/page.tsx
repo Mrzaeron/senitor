@@ -1,9 +1,30 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { getUserProfile } from "@/app/auth/actions";
 import { ProfileSettingsForm } from "@/components/profile/ProfileSettingsForm";
 import { measureServerData } from "@/lib/supabase/diagnostics";
 
-export default async function ProfilePage() {
+export default function ProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <section
+          role="status"
+          aria-busy="true"
+          className="max-w-2xl rounded-xl border border-border bg-bg-card p-6 text-sm text-text-secondary"
+        >
+          Loading profile settings…
+        </section>
+      }
+    >
+      <ProfileSettingsContent />
+    </Suspense>
+  );
+}
+
+async function ProfileSettingsContent() {
+  await connection();
   let profile;
   try {
     profile = await measureServerData(

@@ -27,7 +27,7 @@ const MonacoEditor = dynamic(
       <div
         role="status"
         aria-busy="true"
-        className="flex h-[420px] items-center justify-center bg-bg-base text-sm text-text-muted"
+        className="flex h-[clamp(320px,55dvh,420px)] items-center justify-center bg-bg-base text-sm text-text-muted"
       >
         Loading code editor…
       </div>
@@ -168,6 +168,7 @@ export function ProblemWorkspace({
   );
   const [draftError, setDraftError] = useState<string | null>(null);
   const [output, setOutput] = useState<OutputPanelState | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<"editor" | "output">("editor");
   const [isPending, startTransition] = useTransition();
   const [editorVersion, setEditorVersion] = useState(0);
 
@@ -215,6 +216,7 @@ export function ProblemWorkspace({
       setOutput(
         result.success ? { kind: "run", result } : { kind: "error", message: result.message }
       );
+      setMobilePanel("output");
     });
   };
 
@@ -227,6 +229,7 @@ export function ProblemWorkspace({
       } else {
         setOutput({ kind: "error", message: result.message });
       }
+      setMobilePanel("output");
     });
   };
 
@@ -247,104 +250,151 @@ export function ProblemWorkspace({
   };
 
   return (
-    <div className="space-y-5">
-      <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-3">
-          <label className="flex items-center gap-2 text-sm text-text-secondary">
-            Language
-            <select
-              value={language}
-              onChange={(event) =>
-                changeLanguage(event.target.value as ProblemLanguage)
-              }
-              disabled={isPending}
-              className="h-9 rounded-lg border border-border bg-bg-base px-3 text-sm text-text-primary outline-none focus:border-accent-primary"
-            >
-              {languages.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={isPending}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs text-text-secondary hover:text-text-primary disabled:opacity-50"
-            >
-              <RotateCcw size={14} aria-hidden />
-              Reset
-            </button>
-            <button
-              type="button"
-              onClick={handleClear}
-              disabled={isPending}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs text-text-secondary hover:text-text-primary disabled:opacity-50"
-            >
-              <Trash2 size={14} aria-hidden />
-              Clear
-            </button>
-          </div>
-        </div>
+    <div id="coding-workspace" className="space-y-5">
+      <div
+        role="tablist"
+        aria-label="Coding workspace panels"
+        className="grid grid-cols-2 rounded-lg border border-border bg-bg-secondary p-1 md:hidden"
+      >
+        {(["editor", "output"] as const).map((panel) => (
+          <button
+            key={panel}
+            id={`workspace-tab-${panel}`}
+            type="button"
+            role="tab"
+            aria-selected={mobilePanel === panel}
+            aria-controls={`workspace-panel-${panel}`}
+            onClick={() => setMobilePanel(panel)}
+            className={[
+              "h-11 rounded-md text-sm font-medium capitalize transition-colors",
+              mobilePanel === panel
+                ? "bg-bg-card text-text-primary shadow-sm"
+                : "text-text-muted hover:text-text-primary",
+            ].join(" ")}
+          >
+            {panel}
+          </button>
+        ))}
+      </div>
 
-        <MonacoEditor
-          key={`${slug}:${language}:${editorVersion}`}
-          height="420px"
-          language={language === "cpp" ? "cpp" : "python"}
-          theme="senitor-dark"
-          value={sourceCode}
-          beforeMount={defineTheme}
-          onChange={handleCodeChange}
-          options={{
-            automaticLayout: true,
-            minimap: { enabled: false },
-            lineNumbers: "on",
-            tabSize: 4,
-            insertSpaces: true,
-            scrollBeyondLastLine: false,
-            fontSize: 14,
-            wordWrap: "on",
-            padding: { top: 14 },
-            readOnly: isPending,
-          }}
-        />
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-3">
-          <p className="text-xs text-text-muted">
-            Drafts are saved separately in this browser for each language.
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleRun}
-              disabled={isPending}
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-text-primary hover:border-border-accent disabled:opacity-50"
-            >
-              {isPending ? (
-                <LoaderCircle size={16} className="animate-spin" aria-hidden />
-              ) : null}
-              Run samples
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isPending}
-              className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-primary px-4 text-sm font-semibold text-white hover:bg-accent-primary/90 disabled:opacity-50"
-            >
-              Submit
-            </button>
+      <div
+        id="workspace-panel-editor"
+        role="tabpanel"
+        aria-labelledby="workspace-tab-editor"
+        className={mobilePanel === "editor" ? "block" : "hidden md:block"}
+      >
+        <Card className="min-w-0 overflow-hidden">
+          <div className="flex flex-col gap-3 border-b border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex items-center gap-2 text-sm text-text-secondary">
+              Language
+              <select
+                value={language}
+                onChange={(event) =>
+                  changeLanguage(event.target.value as ProblemLanguage)
+                }
+                disabled={isPending}
+                className="h-11 rounded-lg border border-border bg-bg-base px-3 text-sm text-text-primary outline-none focus:border-accent-primary"
+              >
+                {languages.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={isPending}
+                className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border px-3 text-xs text-text-secondary hover:text-text-primary disabled:opacity-50 sm:flex-none"
+              >
+                <RotateCcw size={14} aria-hidden />
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={isPending}
+                className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border px-3 text-xs text-text-secondary hover:text-text-primary disabled:opacity-50 sm:flex-none"
+              >
+                <Trash2 size={14} aria-hidden />
+                Clear
+              </button>
+            </div>
           </div>
-        </div>
-        {draftError && (
-          <p role="status" className="px-4 pb-3 text-xs text-warning">
-            {draftError}
-          </p>
-        )}
-      </Card>
 
-      <OutputPanel output={output} />
-      <SubmissionHistory history={history} error={historyError} />
+          <MonacoEditor
+            key={`${slug}:${language}:${editorVersion}`}
+            height="clamp(320px, 55dvh, 420px)"
+            language={language === "cpp" ? "cpp" : "python"}
+            theme="senitor-dark"
+            value={sourceCode}
+            beforeMount={defineTheme}
+            onChange={handleCodeChange}
+            options={{
+              automaticLayout: true,
+              minimap: { enabled: false },
+              lineNumbers: "on",
+              tabSize: 4,
+              insertSpaces: true,
+              scrollBeyondLastLine: false,
+              fontSize: 14,
+              wordWrap: "on",
+              padding: { top: 14 },
+              readOnly: isPending,
+            }}
+          />
+          <div className="flex flex-col gap-3 border-t border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs leading-5 text-text-muted">
+              Drafts are saved separately in this browser for each language.
+            </p>
+            <div className="flex w-full gap-2 sm:w-auto">
+              <button
+                type="button"
+                onClick={handleRun}
+                disabled={isPending}
+                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-text-primary hover:border-border-accent disabled:opacity-50 sm:flex-none sm:px-4"
+              >
+                {isPending ? (
+                  <LoaderCircle size={16} className="animate-spin" aria-hidden />
+                ) : null}
+                Run samples
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isPending}
+                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-accent-primary px-3 text-sm font-semibold text-white hover:bg-accent-primary/90 disabled:opacity-50 sm:flex-none sm:px-4"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+          {draftError && (
+            <p
+              role="status"
+              className="break-words px-4 pb-3 text-xs text-warning"
+            >
+              {draftError}
+            </p>
+          )}
+        </Card>
+      </div>
+
+      <div
+        id="workspace-panel-output"
+        role="tabpanel"
+        aria-labelledby="workspace-tab-output"
+        className={
+          mobilePanel === "output"
+            ? "space-y-5"
+            : "hidden md:block md:space-y-5"
+        }
+      >
+        <OutputPanel output={output} />
+        <SubmissionHistory history={history} error={historyError} />
+      </div>
     </div>
   );
 }

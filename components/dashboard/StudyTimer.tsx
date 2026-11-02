@@ -138,7 +138,7 @@ export function StudyTimer({
             type="button"
             disabled={isPending}
             onClick={() => runAction(startStudySessionAction)}
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="min-h-11 rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             Start session
           </button>
@@ -149,7 +149,7 @@ export function StudyTimer({
             onClick={() =>
               runAction(() => pauseStudySessionAction(activeSession.id))
             }
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-primary disabled:opacity-50"
+            className="min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-primary disabled:opacity-50"
           >
             Pause
           </button>
@@ -160,7 +160,7 @@ export function StudyTimer({
             onClick={() =>
               runAction(() => resumeStudySessionAction(activeSession.id))
             }
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="min-h-11 rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             Resume
           </button>
@@ -172,7 +172,7 @@ export function StudyTimer({
             onClick={() =>
               runAction(() => finishStudySessionAction(activeSession.id))
             }
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary disabled:opacity-50"
+            className="min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary disabled:opacity-50"
           >
             Finish session
           </button>

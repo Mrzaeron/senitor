@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import {
@@ -41,6 +42,7 @@ export default function TopicPage({ params }: TopicPageProps) {
 }
 
 async function TopicContent({ params }: TopicPageProps) {
+  await connection();
   const result = await loadTopic(params);
   if ("error" in result && typeof result.error === "string") {
     return result.errorType === "progress" ? (
@@ -58,7 +60,7 @@ async function TopicContent({ params }: TopicPageProps) {
     <div className="flex flex-col gap-6">
       <Link
         href="/learn"
-        className="inline-flex w-fit items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
+        className="inline-flex min-h-11 w-fit items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
       >
         <ArrowLeft size={16} aria-hidden />
         All topics

@@ -86,7 +86,7 @@ export function Modal({
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
       aria-describedby={description ? "modal-description" : undefined}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 [padding-bottom:max(1rem,env(safe-area-inset-bottom))] [padding-top:max(1rem,env(safe-area-inset-top))] sm:items-center"
     >
       {/* Backdrop */}
       <div
@@ -100,7 +100,7 @@ export function Modal({
         ref={panelRef}
         tabIndex={-1}
         className={[
-          "relative z-10 w-full",
+          "relative z-10 max-h-full w-full overflow-y-auto",
           "bg-bg-card border border-border rounded-xl shadow-lg",
           "focus:outline-none",
           "animate-in fade-in zoom-in-95 duration-200",

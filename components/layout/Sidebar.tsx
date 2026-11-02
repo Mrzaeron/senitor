@@ -64,7 +64,7 @@ function NavLink({
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={[
-        "group flex items-center gap-3 rounded-lg px-3 py-2.5",
+        "group flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5",
         "text-sm font-medium transition-all duration-150",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary",
         active
@@ -126,11 +126,12 @@ export const Sidebar = memo(function Sidebar({
 
   return (
     <aside
-      aria-label="Main navigation"
+      aria-label={isMobile ? "Secondary navigation" : "Main navigation"}
       className={[
         "relative flex flex-col h-full",
         "bg-bg-secondary border-r border-border",
         "transition-all duration-300 ease-in-out",
+        isMobile ? "pt-[env(safe-area-inset-top)]" : "",
         collapsed && !isMobile ? "w-[60px]" : "w-[240px]",
       ]
         .filter(Boolean)
@@ -201,7 +202,7 @@ export const Sidebar = memo(function Sidebar({
               onClick={() => logoutAction()}
               aria-label="Log out"
               className={[
-                "flex w-full items-center justify-center px-2 py-2.5 mx-auto mb-2 cursor-pointer",
+                "flex min-h-11 w-full items-center justify-center px-2 py-2.5 mx-auto mb-2 cursor-pointer",
                 "rounded-lg text-text-muted hover:text-error hover:bg-error-muted/30",
                 "transition-colors duration-150 focus-visible:outline-none",
                 "focus-visible:ring-2 focus-visible:ring-accent-primary",
@@ -215,7 +216,7 @@ export const Sidebar = memo(function Sidebar({
             onClick={() => logoutAction()}
             aria-label="Log out"
             className={[
-              "flex w-full items-center gap-2.5 px-3 py-2.5 mb-2 mx-auto rounded-lg cursor-pointer",
+              "flex min-h-11 w-full items-center gap-2.5 px-3 py-2.5 mb-2 mx-auto rounded-lg cursor-pointer",
               "text-sm text-text-muted hover:text-error hover:bg-error-muted/30",
               "transition-colors duration-150 focus-visible:outline-none",
               "focus-visible:ring-2 focus-visible:ring-accent-primary",
@@ -234,8 +235,8 @@ export const Sidebar = memo(function Sidebar({
           onClick={onToggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className={[
-            "absolute -right-3 top-[72px]",
-            "flex h-6 w-6 items-center justify-center",
+            "absolute -right-5 top-[72px]",
+            "flex h-11 w-11 items-center justify-center",
             "rounded-full bg-bg-card border border-border",
             "text-text-muted hover:text-text-primary hover:border-border-accent",
             "transition-all duration-150 shadow-sm z-10",

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import {
@@ -47,6 +48,7 @@ export default function LearnPage() {
 }
 
 async function TopicCatalog() {
+  await connection();
   const result = await loadTopics();
   if ("error" in result) {
     return (

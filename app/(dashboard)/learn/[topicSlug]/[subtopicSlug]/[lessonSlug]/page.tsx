@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Card } from "@/components/ui/Card";
 import {
   CurriculumErrorState,
@@ -42,6 +43,7 @@ export default function LessonPage({ params }: LessonPageProps) {
 }
 
 async function LessonContentPage({ params }: LessonPageProps) {
+  await connection();
   const result = await loadLesson(params);
   if ("error" in result && typeof result.error === "string") {
     return result.errorType === "progress" ? (
@@ -67,21 +69,21 @@ async function LessonContentPage({ params }: LessonPageProps) {
       <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm">
         <Link
           href="/learn"
-          className="text-text-secondary transition-colors hover:text-text-primary"
+          className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-text-primary"
         >
           Learn DSA
         </Link>
         <span className="text-text-muted" aria-hidden>/</span>
         <Link
           href={`/learn/${context.topic.slug}`}
-          className="text-text-secondary transition-colors hover:text-text-primary"
+          className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-text-primary"
         >
           {context.topic.name}
         </Link>
         <span className="text-text-muted" aria-hidden>/</span>
         <Link
           href={`/learn/${context.topic.slug}/${context.subtopic.slug}`}
-          className="text-text-secondary transition-colors hover:text-text-primary"
+          className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-text-primary"
         >
           {context.subtopic.name}
         </Link>

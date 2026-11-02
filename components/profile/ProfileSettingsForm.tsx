@@ -85,7 +85,7 @@ export function ProfileSettingsForm({
               name={field.name}
               defaultValue={selectedValue}
               required
-              className="h-11 rounded-lg border border-border bg-bg-base px-3 text-sm text-text-primary outline-none focus:border-accent-primary"
+              className="h-11 w-full rounded-lg border border-border bg-bg-base px-3 text-sm text-text-primary outline-none focus:border-accent-primary"
             >
               {field.options.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -103,7 +103,7 @@ export function ProfileSettingsForm({
           name="dailyStudyTarget"
           defaultValue={String(profile.daily_study_target ?? 30)}
           required
-          className="h-11 rounded-lg border border-border bg-bg-base px-3 text-sm text-text-primary outline-none focus:border-accent-primary"
+          className="h-11 w-full rounded-lg border border-border bg-bg-base px-3 text-sm text-text-primary outline-none focus:border-accent-primary"
         >
           {targetOptions.map((minutes) => (
             <option key={minutes} value={minutes}>
@@ -129,7 +129,7 @@ export function ProfileSettingsForm({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex h-11 items-center justify-center rounded-lg bg-accent-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-primary/90 disabled:cursor-wait disabled:opacity-60"
+        className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-accent-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-primary/90 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
       >
         {pending ? "Saving…" : "Save settings"}
       </button>

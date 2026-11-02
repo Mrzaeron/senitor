@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Lightbulb } from "lucide-react";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import {
   ProblemCard,
   ProblemDifficultyBadge,
@@ -19,6 +20,7 @@ async function ProblemDetails({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  await connection();
   const { slug } = await params;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) notFound();
 
@@ -65,10 +67,10 @@ async function ProblemDetails({
   }
 
   return (
-      <article className="mx-auto max-w-5xl space-y-7">
+      <article className="mx-auto min-w-0 max-w-5xl space-y-7">
         <Link
           href="/problems"
-          className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
+          className="inline-flex min-h-11 items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
         >
           <ArrowLeft size={16} aria-hidden />
           All problems
@@ -88,7 +90,7 @@ async function ProblemDetails({
               {problem.subtopic_name}
             </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-text-primary">
+          <h1 className="break-words text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
             {problem.title}
           </h1>
           <div className="flex flex-wrap gap-2">
@@ -96,7 +98,7 @@ async function ProblemDetails({
               <Link
                 key={tag.id}
                 href={`/problems?tag=${encodeURIComponent(tag.slug)}`}
-                className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+                className="inline-flex min-h-11 items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
               >
                 <span className="inline-flex rounded-full border border-border bg-bg-overlay px-2.5 py-1 text-xs text-text-secondary hover:text-text-primary">
                   {tag.name}
@@ -104,10 +106,17 @@ async function ProblemDetails({
               </Link>
             ))}
           </div>
+          <Link
+            href="#coding-workspace"
+            className="inline-flex h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-accent-secondary hover:border-border-accent xl:hidden"
+          >
+            Open coding workspace
+            <ArrowRight size={16} aria-hidden />
+          </Link>
         </header>
 
-        <div className="grid items-start gap-6 xl:grid-cols-2">
-          <div className="space-y-5">
+        <div className="grid min-w-0 items-start gap-6 xl:grid-cols-2">
+          <div className="min-w-0 space-y-5">
         <Card className="p-5 md:p-7">
           <h2 className="mb-5 text-xl font-semibold text-text-primary">
             Problem
@@ -130,13 +139,13 @@ async function ProblemDetails({
               {problem.examples.map((example, index) => (
                 <div
                   key={`${problem.id}-example-${index}`}
-                  className="rounded-lg border border-border bg-bg-secondary p-4"
+                  className="min-w-0 rounded-lg border border-border bg-bg-secondary p-4"
                 >
                   <h4 className="text-sm font-medium text-text-secondary">
                     Example {index + 1}
                   </h4>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    <div>
+                  <div className="mt-3 grid min-w-0 gap-3 md:grid-cols-2">
+                    <div className="min-w-0">
                       <p className="mb-1 text-xs font-medium text-text-muted">
                         Input
                       </p>
@@ -144,7 +153,7 @@ async function ProblemDetails({
                         <code>{example.input}</code>
                       </pre>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="mb-1 text-xs font-medium text-text-muted">
                         Output
                       </p>
@@ -239,14 +248,14 @@ async function ProblemDetails({
         <div className="flex justify-between border-t border-border pt-5">
           <Link
             href="/problems"
-            className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary"
+            className="inline-flex min-h-11 items-center gap-2 text-sm text-text-secondary hover:text-text-primary"
           >
             <ArrowLeft size={16} aria-hidden />
             Back to problem bank
           </Link>
           <Link
             href={`/problems?topic=${encodeURIComponent(problem.topic_slug)}`}
-            className="inline-flex items-center gap-2 text-sm text-accent-secondary hover:text-text-primary"
+            className="inline-flex min-h-11 items-center gap-2 text-sm text-accent-secondary hover:text-text-primary"
           >
             More in {problem.topic_name}
             <ArrowRight size={16} aria-hidden />

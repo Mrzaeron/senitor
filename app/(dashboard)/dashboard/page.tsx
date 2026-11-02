@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { getUserProfile } from "@/app/auth/actions";
 import { Badge } from "@/components/ui/Badge";
 import {
@@ -37,6 +38,7 @@ export default function DashboardPage() {
 }
 
 async function DashboardProfile() {
+  await connection();
   const [profile, studySummary] = await measureServerData(
     "/dashboard",
     "profile and study-time data",
@@ -151,6 +153,7 @@ async function DashboardProfile() {
 }
 
 async function DashboardLearning() {
+  await connection();
   const result = await loadDashboardLearning();
   if ("error" in result && typeof result.error === "string") {
     return <LearningProgressErrorState message={result.error} />;

@@ -19,7 +19,7 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
         return (
           <code
             key={key}
-            className="rounded bg-bg-overlay px-1.5 py-0.5 font-mono text-[0.9em] text-accent-secondary"
+            className="break-all rounded bg-bg-overlay px-1.5 py-0.5 font-mono text-[0.9em] text-accent-secondary sm:break-normal"
           >
             {part.slice(1, -1)}
           </code>
@@ -61,7 +61,7 @@ export function LessonContent({ content }: { content: string }) {
       blocks.push(
         <pre
           key={`code-${blocks.length}`}
-          className="overflow-x-auto rounded-xl border border-border bg-bg-base p-4 text-sm leading-relaxed"
+          className="max-w-full overflow-x-auto rounded-xl border border-border bg-bg-base p-4 text-sm leading-relaxed"
         >
           <code className="font-mono text-text-primary">
             {codeLines.join("\n")}
@@ -144,7 +144,7 @@ export function LessonContent({ content }: { content: string }) {
     blocks.push(
       <p
         key={`paragraph-${blocks.length}`}
-        className="text-sm leading-7 text-text-secondary"
+        className="break-words text-sm leading-7 text-text-secondary"
       >
         {renderInline(paragraph.join(" "), `paragraph-${blocks.length}`)}
       </p>

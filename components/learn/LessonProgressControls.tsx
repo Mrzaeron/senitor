@@ -106,6 +106,7 @@ export function LessonProgressControls({
               loading={pending}
               onClick={resumeLesson}
               leftIcon={<Play size={14} />}
+              className="min-h-11 flex-1 sm:flex-none"
             >
               {status === "in_progress" ? "Resume lesson" : "Start lesson"}
             </Button>
@@ -115,6 +116,7 @@ export function LessonProgressControls({
               loading={pending}
               onClick={markComplete}
               leftIcon={<CheckCircle2 size={14} />}
+              className="min-h-11 flex-1 sm:flex-none"
             >
               Mark as complete
             </Button>
