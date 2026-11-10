@@ -68,21 +68,41 @@ export async function loginAction(data: LoginInput): Promise<ActionResult> {
   // Check onboarding status
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
+  if (userError) {
+    logSupabaseQueryError("authentication", "loading the signed-in user", userError);
+    return {
+      success: false,
+      error: "Your session could not be verified. Please try signing in again.",
+    };
+  }
+  if (!user) {
+    return {
+      success: false,
+      error: "Your session could not be verified. Please try signing in again.",
+    };
+  }
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarding_completed")
-      .eq("id", user.id)
-      .single();
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("onboarding_completed")
+    .eq("id", user.id)
+    .maybeSingle();
 
-    if (!profile || !profile.onboarding_completed) {
-      return {
-        success: true,
-        data: { redirectTo: "/onboarding" },
-      };
-    }
+  if (profileError) {
+    logSupabaseQueryError("authentication", "checking onboarding status", profileError);
+    return {
+      success: false,
+      error: "Your account setup could not be verified. Please try again.",
+    };
+  }
+
+  if (!profile?.onboarding_completed) {
+    return {
+      success: true,
+      data: { redirectTo: "/onboarding" },
+    };
   }
 
   revalidatePath("/", "layout");
@@ -274,31 +294,33 @@ export async function submitOnboardingAction(
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return {
-      success: false,
-      error: "You must be logged in to complete onboarding.",
-    };
+  let authenticated: Awaited<ReturnType<typeof getAuthenticatedClient>>;
+  try {
+    authenticated = await getAuthenticatedClient();
+  } catch (error) {
+    if (error instanceof SupabaseAuthenticationError) {
+      return {
+        success: false,
+        error: "You must be signed in to complete account setup.",
+      };
+    }
+    throw error;
   }
 
-  // Only the name is required to start using the problem bank.
-  const { error: upsertError } = await supabase.from("profiles").upsert({
-    id: user.id,
-    full_name: parsed.data.fullName,
-    onboarding_completed: true,
-    updated_at: new Date().toISOString(),
-  });
+  const { error: upsertError } = await authenticated.supabase
+    .from("profiles")
+    .upsert({
+      id: authenticated.userId,
+      full_name: parsed.data.fullName,
+      onboarding_completed: true,
+      updated_at: new Date().toISOString(),
+    });
 
   if (upsertError) {
+    logSupabaseQueryError("profile", "completing onboarding", upsertError);
     return {
       success: false,
-      error: `Failed to save onboarding profile: ${upsertError.message}`,
+      error: "Your account setup could not be saved. Please try again.",
     };
   }
 
