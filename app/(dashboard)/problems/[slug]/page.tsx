@@ -9,6 +9,7 @@ import {
   ProblemErrorState,
 } from "@/components/problems/ProblemUI";
 import { ProblemWorkspace } from "@/components/problems/ProblemWorkspace";
+import { LearningInsights } from "@/components/problems/LearningInsights";
 import { LessonContent } from "@/components/learn/LessonContent";
 import { Card } from "@/components/ui/Card";
 import { getProblemBySlug, ProblemDataError } from "@/lib/problems/data";
@@ -228,6 +229,10 @@ async function ProblemDetails({
               starterCode={problem.starter_code}
               history={history}
               historyError={historyError}
+            />
+            <LearningInsights
+              problemId={problem.id}
+              submissionVersion={history.length}
             />
           </aside>
         </div>
