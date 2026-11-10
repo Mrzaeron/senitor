@@ -8,6 +8,8 @@ To enable code execution, configure `JUDGE0_API_KEY` and `JUDGE0_API_HOST=judge0
 
 Apply the Phase 5.4 migration `supabase/migrations/20261101000400_add_coding_submissions.sql` after the Problem Bank migration, then rerun `supabase/seed_problems.sql` to populate starter code. See [AUTH_SETUP.md](./AUTH_SETUP.md) for the full migration order and environment setup.
 
+After applying the ordered migrations and the original problem seed, run `supabase/seed_additional_problems.sql` to add the 70-problem expansion. The script validates the 100-problem target and its 40/40/20 difficulty split; it does not change the database until explicitly executed.
+
 ## Getting Started
 
 First, run the development server:

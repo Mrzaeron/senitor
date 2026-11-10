@@ -11,6 +11,7 @@ export type LearningGoal =
 export interface UserProfile {
   id: string;
   full_name: string | null;
+  avatar_path: string | null;
   programming_language: ProgrammingLanguage | null;
   programming_experience: ExperienceLevel | null;
   dsa_experience: ExperienceLevel | null;
@@ -21,17 +22,14 @@ export interface UserProfile {
   updated_at: string;
 }
 
-export type ProfileSettingsData = Pick<
-  UserProfile,
-  | "id"
-  | "full_name"
-  | "programming_language"
-  | "programming_experience"
-  | "dsa_experience"
-  | "learning_goal"
-  | "daily_study_target"
-  | "onboarding_completed"
->;
+export interface AccountProfileData {
+  id: string;
+  full_name: string | null;
+  avatar_path: string | null;
+  created_at: string;
+  email: string;
+  username: string;
+}
 
 export interface OnboardingFormValues {
   fullName: string;

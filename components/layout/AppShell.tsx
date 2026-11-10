@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { createClient } from "@/lib/supabase/client";
+import { getAvatarUrl } from "@/lib/profile/avatar";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -19,31 +20,60 @@ export function AppShell({ children }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userName, setUserName] = useState("Student");
   const [userEmail, setUserEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let active = true;
     const supabase = createClient();
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!active || !session?.user) return;
-      const { user } = session;
+    const loadUserIdentity = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!active || !data.user) return;
+      const { user } = data;
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_path")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profileError) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("[navigation] profile identity lookup failed", {
+            code: profileError.code,
+          });
+        }
+      }
       const metadataName = user.user_metadata?.full_name;
       setUserName(
-        typeof metadataName === "string" && metadataName.trim()
-          ? metadataName.trim()
-          : user.email?.split("@")[0] || "Student"
+        profile?.full_name?.trim() ||
+          (typeof metadataName === "string" && metadataName.trim()
+            ? metadataName.trim()
+            : user.email?.split("@")[0] || "Student")
       );
       setUserEmail(user.email ?? "");
-    }).catch((error: unknown) => {
+      setAvatarUrl(getAvatarUrl(profile?.avatar_path ?? null));
+    };
+    void loadUserIdentity().catch((error: unknown) => {
       if (process.env.NODE_ENV === "development") {
-        console.error("[navigation] local session display lookup failed", {
+        console.error("[navigation] identity lookup failed", {
           name: error instanceof Error ? error.name : "Unknown error",
         });
       }
     });
 
+    const handleProfileUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        userName?: string;
+        avatarUrl?: string;
+      }>).detail;
+      if (detail.userName) setUserName(detail.userName);
+      setAvatarUrl(detail.avatarUrl);
+    };
+    window.addEventListener("senitor:profile-updated", handleProfileUpdate);
+
     return () => {
       active = false;
+      window.removeEventListener("senitor:profile-updated", handleProfileUpdate);
     };
   }, []);
 
@@ -72,6 +102,7 @@ export function AppShell({ children }: AppShellProps) {
               onToggle={toggleSidebar}
               userName={userName}
               userEmail={userEmail}
+              avatarUrl={avatarUrl}
             />
           </div>
         </Suspense>
@@ -84,6 +115,7 @@ export function AppShell({ children }: AppShellProps) {
           triggerRef={menuButtonRef}
           userName={userName}
           userEmail={userEmail}
+          avatarUrl={avatarUrl}
         />
       </Suspense>
 

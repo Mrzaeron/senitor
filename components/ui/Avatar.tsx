@@ -77,6 +77,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
         {src ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
+            key={src}
             src={src}
             alt={alt}
             className="w-full h-full object-cover"

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { getUserProfile } from "@/app/auth/actions";
-import { ProfileSettingsForm } from "@/components/profile/ProfileSettingsForm";
+import { AccountProfileForm } from "@/components/profile/AccountProfileForm";
 import { measureServerData } from "@/lib/supabase/diagnostics";
 
 export default function ProfilePage() {
@@ -14,7 +14,7 @@ export default function ProfilePage() {
           aria-busy="true"
           className="max-w-2xl rounded-xl border border-border bg-bg-card p-6 text-sm text-text-secondary"
         >
-          Loading profile settings…
+          Loading your profile…
         </section>
       }
     >
@@ -58,13 +58,13 @@ async function ProfileSettingsContent() {
           Profile not found
         </h2>
         <p className="text-sm text-text-secondary">
-          Complete onboarding to configure your learning preferences.
+          Complete account setup to continue to your profile.
         </p>
         <Link
           href="/onboarding"
           className="inline-flex text-sm font-medium text-accent-secondary hover:text-text-primary"
         >
-          Continue onboarding
+          Continue account setup
         </Link>
       </section>
     );
@@ -74,14 +74,14 @@ async function ProfileSettingsContent() {
     <div className="mx-auto w-full max-w-3xl space-y-6">
       <header className="space-y-2">
         <p className="text-sm font-medium text-accent-secondary">Account</p>
-        <h2 className="text-2xl font-bold text-text-primary">Profile settings</h2>
+        <h1 className="text-2xl font-bold text-text-primary">Your profile</h1>
         <p className="text-sm text-text-secondary">
-          Update the preferences used to personalize your learning dashboard.
+          Manage your account details and profile picture.
         </p>
       </header>
 
       <section className="rounded-xl border border-border bg-bg-card p-5 md:p-7">
-        <ProfileSettingsForm profile={profile} />
+        <AccountProfileForm profile={profile} />
       </section>
     </div>
   );

@@ -22,6 +22,7 @@ export interface MobileNavProps {
   triggerRef: React.RefObject<HTMLButtonElement | null>;
   userName: string;
   userEmail: string;
+  avatarUrl?: string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -32,6 +33,7 @@ export const MobileNav = memo(function MobileNav({
   triggerRef,
   userName,
   userEmail,
+  avatarUrl,
 }: MobileNavProps) {
   const pathname = usePathname();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -186,6 +188,7 @@ export const MobileNav = memo(function MobileNav({
           onToggle={() => {}}
           userName={userName}
           userEmail={userEmail}
+          avatarUrl={avatarUrl}
           isMobile
         />
       </div>

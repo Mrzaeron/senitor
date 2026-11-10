@@ -23,7 +23,7 @@ import {
   SupabaseAuthenticationError,
 } from "@/lib/supabase/authenticated-client";
 import { logSupabaseQueryError } from "@/lib/supabase/diagnostics";
-import type { ProfileSettingsData } from "@/types/user";
+import type { AccountProfileData } from "@/types/user";
 
 export interface ActionResult<T = unknown> {
   success: boolean;
@@ -287,15 +287,10 @@ export async function submitOnboardingAction(
     };
   }
 
-  // Upsert profile for the authenticated user ID (never trust client-supplied ID!)
+  // Only the name is required to start using the problem bank.
   const { error: upsertError } = await supabase.from("profiles").upsert({
     id: user.id,
     full_name: parsed.data.fullName,
-    programming_language: parsed.data.programmingLanguage,
-    programming_experience: parsed.data.programmingExperience,
-    dsa_experience: parsed.data.dsaExperience,
-    learning_goal: parsed.data.learningGoal,
-    daily_study_target: parsed.data.dailyStudyTarget,
     onboarding_completed: true,
     updated_at: new Date().toISOString(),
   });
@@ -310,7 +305,7 @@ export async function submitOnboardingAction(
   revalidatePath("/", "layout");
   return {
     success: true,
-    message: "Personalized roadmap created! Redirecting to dashboard...",
+    message: "Profile ready! Redirecting to dashboard...",
     data: { redirectTo: "/dashboard" },
   };
 }
@@ -318,24 +313,19 @@ export async function submitOnboardingAction(
 /**
  * Get current user profile
  */
-const readUserProfile = cache(async (): Promise<ProfileSettingsData | null> => {
-  let supabase: Awaited<ReturnType<typeof createClient>>;
-  let userId: string;
+const readUserProfile = cache(async (): Promise<AccountProfileData | null> => {
+  let authenticated: Awaited<ReturnType<typeof getAuthenticatedClient>>;
   try {
-    const authenticated = await getAuthenticatedClient();
-    supabase = authenticated.supabase;
-    userId = authenticated.userId;
+    authenticated = await getAuthenticatedClient();
   } catch (error) {
     if (error instanceof SupabaseAuthenticationError) return null;
     throw error;
   }
 
-  const { data: profile, error } = await supabase
+  const { data: profile, error } = await authenticated.supabase
     .from("profiles")
-    .select(
-      "id, full_name, programming_language, programming_experience, dsa_experience, learning_goal, daily_study_target, onboarding_completed"
-    )
-    .eq("id", userId)
+    .select("id, full_name, avatar_path, created_at")
+    .eq("id", authenticated.userId)
     .maybeSingle();
 
   if (error) {
@@ -343,9 +333,20 @@ const readUserProfile = cache(async (): Promise<ProfileSettingsData | null> => {
     throw new Error("Profile settings could not be loaded. Please try again.");
   }
 
-  return profile as ProfileSettingsData | null;
+  if (!profile) return null;
+
+  const email = authenticated.user.email ?? "";
+  const metadataUsername = authenticated.user.user_metadata?.username;
+  return {
+    ...profile,
+    email,
+    username:
+      typeof metadataUsername === "string" && metadataUsername.trim()
+        ? metadataUsername.trim()
+        : email.split("@")[0] || "Student",
+  } as AccountProfileData;
 });
 
-export async function getUserProfile(): Promise<ProfileSettingsData | null> {
+export async function getUserProfile(): Promise<AccountProfileData | null> {
   return readUserProfile();
 }

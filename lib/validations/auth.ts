@@ -68,55 +68,6 @@ export const onboardingSchema = z.object({
     .trim()
     .min(2, "Full name must be at least 2 characters")
     .max(100, "Full name cannot exceed 100 characters"),
-  programmingLanguage: z.enum(["cpp", "python", "java"], {
-    message: "Please select a preferred programming language",
-  }),
-  programmingExperience: z.enum(["beginner", "intermediate", "advanced"], {
-    message: "Please select your programming experience",
-  }),
-  dsaExperience: z.enum(["beginner", "intermediate", "advanced"], {
-    message: "Please select your DSA experience level",
-  }),
-  learningGoal: z.enum(
-    [
-      "interview_prep",
-      "competitive_programming",
-      "academic_exams",
-      "core_mastery",
-    ],
-    {
-      message: "Please select your primary learning goal",
-    }
-  ),
-  dailyStudyTarget: z
-    .number()
-    .min(10, "Target must be at least 10 minutes")
-    .max(240, "Target cannot exceed 240 minutes"),
 });
 
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
-
-export const profileSettingsSchema = z.object({
-  programmingLanguage: z.enum(["cpp", "python", "java"], {
-    message: "Select a supported programming language",
-  }),
-  experienceLevel: z.enum(["beginner", "intermediate", "advanced"], {
-    message: "Select an experience level",
-  }),
-  learningGoal: z.enum(
-    [
-      "interview_prep",
-      "competitive_programming",
-      "academic_exams",
-      "core_mastery",
-    ],
-    { message: "Select a learning goal" }
-  ),
-  dailyStudyTarget: z.coerce
-    .number()
-    .int()
-    .min(10, "Daily target must be at least 10 minutes")
-    .max(240, "Daily target cannot exceed 240 minutes"),
-});
-
-export type ProfileSettingsInput = z.infer<typeof profileSettingsSchema>;

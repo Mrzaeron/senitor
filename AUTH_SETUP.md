@@ -43,16 +43,22 @@ For a fresh project, apply each migration in the Supabase SQL Editor in this ord
 5. `supabase/migrations/20261031234900_create_problem_bank.sql`
 6. `supabase/migrations/20261101000400_add_coding_submissions.sql`
 7. `supabase/migrations/20261101130000_create_study_sessions.sql`
-8. `supabase/seed_curriculum.sql`
-9. `supabase/seed_problems.sql`
+8. `supabase/migrations/20261106190000_add_profile_avatars.sql`
+9. `supabase/migrations/20261106190001_simplify_profile_onboarding.sql`
+10. `supabase/migrations/20261106190002_read_own_submitted_problems.sql`
+11. `supabase/seed_curriculum.sql`
+12. `supabase/seed_problems.sql`
+13. `supabase/seed_additional_problems.sql`
 
 Do not run `supabase/schema.sql` as well as the initial profiles migration; it is an alternative initial profiles setup. If PostgREST still reports a table missing after applying migrations, refresh its schema cache from the SQL Editor with `NOTIFY pgrst, 'reload schema';` and retry.
 
 The seed is safe to rerun: topics, subtopics, and lessons are upserted by their slugs, and prerequisite relationships use conflict-safe inserts. Curriculum read access is limited to authenticated users and published records. Learning-progress records are isolated to the authenticated owner by Row Level Security.
 
-The problem bank seed upserts its 30 original problems and tags, adds sample cases from each problem's examples, and inserts a small set of private cases. The problem bank migration permits students to read only published problem content and sample cases; it grants no student write access.
+The original problem seed adds 30 problems. Run `supabase/seed_additional_problems.sql` afterward to add 70 more; it is safe to rerun, preserves existing problem IDs, and checks for exactly 100 published problems (40 easy, 40 medium, 20 hard). It adds two public examples and a private case per new problem. Apply it only after confirming the database has the expected 30-problem baseline.
 
-The study-session migration adds owner-scoped session and elapsed-time segment tables. Study time is recorded from server timestamps; an active session is automatically paused after 90 seconds without a browser heartbeat.
+The study-session migration and its existing tables are retained so historical data is not deleted. The dashboard no longer exposes the study timer.
+
+The avatar migration creates or configures a public `avatars` bucket with a 2 MB size limit and JPEG, PNG, and WebP MIME restrictions. Storage object policies restrict authenticated uploads, updates, and deletes to the current user's own folder.
 
 ### Code execution configuration
 
@@ -179,10 +185,7 @@ CREATE TRIGGER on_profiles_updated_at
 4. Click **Create Account**.
    * If email confirmation is disabled: You will be immediately redirected to `http://localhost:3000/onboarding`.
    * If email confirmation is enabled: You will see the verification message instructing you to check your inbox.
-5. In `/onboarding`, complete the 3 steps:
-   * **Step 1:** Select preferred language (e.g. C++).
-   * **Step 2:** Select programming & DSA experience levels.
-   * **Step 3:** Select learning goal & daily target (e.g. 45 mins).
+5. In `/onboarding`, enter your name. Learning preferences are optional and are no longer required to access the problem bank.
 6. Click **"Build My Personalized Roadmap"**.
 7. You will be redirected to `http://localhost:3000/dashboard` where your learning profile banner will display your chosen language, target goal, and daily study commitment!
 

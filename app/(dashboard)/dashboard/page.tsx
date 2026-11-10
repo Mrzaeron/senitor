@@ -1,15 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { getUserProfile } from "@/app/auth/actions";
-import { Badge } from "@/components/ui/Badge";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/Card";
+import { CodingProgress } from "@/components/dashboard/CodingProgress";
 import {
   LearningOverview,
   LearningProgressErrorState,
@@ -19,136 +11,40 @@ import {
   getOverallLearningProgress,
   LearningProgressError,
 } from "@/lib/learning/progress";
-import { getDailyStudySummary } from "@/lib/study/sessions";
-import { StudyTimer } from "@/components/dashboard/StudyTimer";
 import { measureServerData } from "@/lib/supabase/diagnostics";
-import { ArrowRight, BookOpen, Sparkles, Code2, Target, Clock } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-col gap-6 max-w-5xl">
-      <Suspense fallback={<DashboardProfileFallback />}>
-        <DashboardProfile />
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-7">
+      <header className="space-y-1">
+        <p className="text-sm font-medium text-accent-secondary">Your practice</p>
+        <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
+          Coding dashboard
+        </h1>
+        <p className="text-sm text-text-secondary">
+          Track your problem-solving progress and keep building your DSA skills.
+        </p>
+      </header>
+
+      <Suspense fallback={<CodingProgressFallback />}>
+        <CodingProgress />
       </Suspense>
+
       <Suspense fallback={<DashboardLearningFallback />}>
         <DashboardLearning />
       </Suspense>
     </div>
-  );
-}
-
-async function DashboardProfile() {
-  await connection();
-  const [profile, studySummary] = await measureServerData(
-    "/dashboard",
-    "profile and study-time data",
-    () =>
-      Promise.all([
-        getUserProfile(),
-        getDailyStudySummary().catch((error: unknown) => {
-          if (process.env.NODE_ENV === "development") {
-            console.error("[study-sessions] dashboard summary unavailable", {
-              name: error instanceof Error ? error.name : "Unknown error",
-              message: error instanceof Error ? error.message : "Unknown error",
-            });
-          }
-          return null;
-        }),
-      ])
-  );
-
-  return (
-    <>
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2 mb-1">
-          <Badge variant="default" dot>Active Session</Badge>
-          {profile?.programming_language && (
-            <Badge variant="info">
-              {profile.programming_language.toUpperCase()}
-            </Badge>
-          )}
-        </div>
-        <h2 className="text-2xl font-bold text-text-primary">
-          {profile?.full_name ? `Welcome back, ${profile.full_name}` : "Dashboard"}
-        </h2>
-        <p className="text-text-secondary text-sm">
-          Your AI-powered personalized DSA learning workspace.
-        </p>
-      </div>
-
-      {profile && (
-        <Card className="border-border bg-bg-card shadow-sm">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2 text-accent-secondary">
-              <Sparkles size={16} />
-              <CardTitle className="text-base font-semibold">Your Learning Profile</CardTitle>
-            </div>
-            <CardDescription>
-              Configured during onboarding to personalize your problem recommendations.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-bg-secondary border border-border">
-                <Code2 size={20} className="text-accent-primary shrink-0" />
-                <div>
-                  <p className="text-xs text-text-muted">Language & Track</p>
-                  <p className="text-sm font-semibold text-text-primary capitalize">
-                    {profile.programming_language || "C++"} (
-                    {profile.programming_experience ||
-                      profile.dsa_experience ||
-                      "Beginner"}
-                    )
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-bg-secondary border border-border">
-                <Target size={20} className="text-success shrink-0" />
-                <div>
-                  <p className="text-xs text-text-muted">Target Goal</p>
-                  <p className="text-sm font-semibold text-text-primary capitalize">
-                    {profile.learning_goal?.replace(/_/g, " ") || "Interview Prep"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-bg-secondary border border-border">
-                <Clock size={20} className="text-warning shrink-0" />
-                <div>
-                  <p className="text-xs text-text-muted">Daily Target</p>
-                  <p className="text-sm font-semibold text-text-primary">
-                    {profile.daily_study_target ?? 30} mins / day
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {studySummary ? (
-        <StudyTimer
-          key={[
-            studySummary.activeSession?.id ?? "none",
-            studySummary.activeSession?.status ?? "",
-            studySummary.todaySeconds,
-            studySummary.activeSession?.elapsedSeconds ?? 0,
-          ].join(":")}
-          initialSummary={studySummary}
-          targetMinutes={profile?.daily_study_target ?? null}
-        />
-      ) : (
-        <Card className="space-y-2 border-border bg-bg-card p-5">
-          <h3 className="font-semibold text-text-primary">
-            Study timer unavailable
-          </h3>
-          <p className="text-sm text-text-secondary">
-            Apply the study-session migration to record actual study time.
-          </p>
-        </Card>
-      )}
-    </>
   );
 }
 
@@ -170,7 +66,7 @@ async function DashboardLearning() {
           <div className="flex items-center gap-2 text-accent-secondary">
             <BookOpen size={17} aria-hidden />
             <CardTitle className="text-base font-semibold">
-              Continue Learning
+              Continue learning
             </CardTitle>
           </div>
           <CardDescription>
@@ -240,25 +136,30 @@ async function loadDashboardLearning() {
   }
 }
 
-function DashboardLearningFallback() {
+function CodingProgressFallback() {
   return (
-    <div className="space-y-4" aria-busy="true">
+    <div className="space-y-5" role="status" aria-busy="true">
+      <span className="sr-only">Loading coding progress…</span>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        {Array.from({ length: 6 }, (_, index) => (
+          <div key={index} className="h-24 animate-pulse rounded-xl border border-border bg-bg-card" />
+        ))}
+      </div>
       <div className="h-48 animate-pulse rounded-xl border border-border bg-bg-card" />
-      <div className="h-36 animate-pulse rounded-xl border border-border bg-bg-card" />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="h-64 animate-pulse rounded-xl border border-border bg-bg-card" />
+        <div className="h-64 animate-pulse rounded-xl border border-border bg-bg-card" />
+      </div>
     </div>
   );
 }
 
-function DashboardProfileFallback() {
+function DashboardLearningFallback() {
   return (
-    <div className="flex flex-col gap-1" aria-busy="true">
-      <div className="flex items-center gap-2 mb-1">
-        <Badge variant="default" dot>Active Session</Badge>
-      </div>
-      <h2 className="text-2xl font-bold text-text-primary">Dashboard</h2>
-      <p className="text-text-secondary text-sm">
-        Your AI-powered personalized DSA learning workspace.
-      </p>
+    <div className="space-y-4" role="status" aria-busy="true">
+      <span className="sr-only">Loading curriculum progress…</span>
+      <div className="h-48 animate-pulse rounded-xl border border-border bg-bg-card" />
+      <div className="h-36 animate-pulse rounded-xl border border-border bg-bg-card" />
     </div>
   );
 }

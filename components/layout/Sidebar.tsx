@@ -44,6 +44,7 @@ export interface SidebarProps {
   onToggle: () => void;
   userName: string;
   userEmail: string;
+  avatarUrl?: string;
   /** Mobile: always expanded; collapse toggle hidden */
   isMobile?: boolean;
 }
@@ -117,6 +118,7 @@ export const Sidebar = memo(function Sidebar({
   onToggle,
   userName,
   userEmail,
+  avatarUrl,
   isMobile = false,
 }: SidebarProps) {
   const pathname = usePathname();
@@ -178,6 +180,7 @@ export const Sidebar = memo(function Sidebar({
           ].join(" ")}
         >
           <Avatar
+            src={avatarUrl}
             fallback={userName}
             size="sm"
             status="online"
