@@ -1,11 +1,11 @@
 DO $seed$
 DECLARE
   problem_data JSONB;
-  problem_id UUID;
-  topic_id UUID;
-  subtopic_id UUID;
+  resolved_problem_id UUID;
+  resolved_topic_id UUID;
+  resolved_subtopic_id UUID;
   tag_slug TEXT;
-  tag_id UUID;
+  resolved_tag_id UUID;
   example_data JSONB;
   example_index INTEGER;
   private_test_count INTEGER := 0;
@@ -107,20 +107,20 @@ $problems$::JSONB) AS value
       RAISE EXCEPTION 'Invalid difficulty in problem seed: %', problem_data->>'slug';
     END IF;
 
-    SELECT topics.id INTO topic_id
+    SELECT topics.id INTO resolved_topic_id
     FROM public.topics
     WHERE topics.slug = problem_data->>'topic'
       AND topics.is_published;
-    IF topic_id IS NULL THEN
+    IF resolved_topic_id IS NULL THEN
       RAISE EXCEPTION 'Published topic not found for problem %', problem_data->>'slug';
     END IF;
 
-    SELECT subtopics.id INTO subtopic_id
+    SELECT subtopics.id INTO resolved_subtopic_id
     FROM public.subtopics
-    WHERE subtopics.topic_id = topic_id
+    WHERE subtopics.topic_id = resolved_topic_id
       AND subtopics.slug = problem_data->>'subtopic'
       AND subtopics.is_published;
-    IF subtopic_id IS NULL THEN
+    IF resolved_subtopic_id IS NULL THEN
       RAISE EXCEPTION 'Published subtopic not found for problem %', problem_data->>'slug';
     END IF;
 
@@ -134,8 +134,8 @@ $problems$::JSONB) AS value
       problem_data->>'slug',
       problem_data->>'description',
       problem_data->>'difficulty',
-      topic_id,
-      subtopic_id,
+      resolved_topic_id,
+      resolved_subtopic_id,
       ARRAY(SELECT jsonb_array_elements_text(problem_data->'constraints')),
       problem_data->>'input_format',
       problem_data->>'output_format',
@@ -159,7 +159,7 @@ $problems$::JSONB) AS value
       supported_languages = EXCLUDED.supported_languages,
       starter_code = EXCLUDED.starter_code,
       is_published = TRUE
-    RETURNING id INTO problem_id;
+    RETURNING id INTO resolved_problem_id;
 
     example_index := 0;
     FOR example_data IN
@@ -169,13 +169,13 @@ $problems$::JSONB) AS value
         problem_id, input, expected_output, is_sample, sort_order
       )
       VALUES (
-        problem_id,
+        resolved_problem_id,
         example_data->>'input',
         example_data->>'output',
         TRUE,
         example_index
       )
-      ON CONFLICT (problem_id, sort_order) DO UPDATE SET
+      ON CONFLICT ON CONSTRAINT problem_test_cases_problem_order_unique DO UPDATE SET
         input = EXCLUDED.input,
         expected_output = EXCLUDED.expected_output,
         is_sample = TRUE;
@@ -186,13 +186,13 @@ $problems$::JSONB) AS value
       problem_id, input, expected_output, is_sample, sort_order
     )
     VALUES (
-      problem_id,
+      resolved_problem_id,
       problem_data->>'private_input',
       problem_data->>'private_output',
       FALSE,
       10
     )
-    ON CONFLICT (problem_id, sort_order) DO UPDATE SET
+    ON CONFLICT ON CONSTRAINT problem_test_cases_problem_order_unique DO UPDATE SET
       input = EXCLUDED.input,
       expected_output = EXCLUDED.expected_output,
       is_sample = FALSE;
@@ -204,11 +204,11 @@ $problems$::JSONB) AS value
       INSERT INTO public.problem_tags (name, slug)
       VALUES (initcap(replace(tag_slug, '-', ' ')), tag_slug)
       ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
-      RETURNING id INTO tag_id;
+      RETURNING id INTO resolved_tag_id;
 
       INSERT INTO public.problem_tag_relations (problem_id, tag_id)
-      VALUES (problem_id, tag_id)
-      ON CONFLICT (problem_id, tag_id) DO NOTHING;
+      VALUES (resolved_problem_id, resolved_tag_id)
+      ON CONFLICT ON CONSTRAINT problem_tag_relations_pk DO NOTHING;
     END LOOP;
   END LOOP;
 
