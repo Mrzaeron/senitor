@@ -265,7 +265,7 @@ export async function getLearningInsights(
       (id) => (masteryByTopicId.get(id) ?? 0.5) >= prerequisiteThreshold
     );
   });
-  const nextTopic = eligibleTopics[0] ?? weakTopics[0] ?? null;
+  const nextTopic = eligibleTopics[0] ?? null;
   const nextTopicRow = nextTopic
     ? topics.find((topic) => topic.slug === nextTopic.slug)
     : undefined;
@@ -416,7 +416,9 @@ export async function getLearningInsights(
     recommendedProblems,
     explanation: nextTopic
       ? `${nextTopic.name} is the weakest topic currently eligible under the curriculum prerequisites.`
-      : "All available topics meet the current mastery target.",
+      : weakTopics.length > 0
+        ? "No weak topic is currently eligible. Complete the required prerequisite topics before continuing."
+        : "All available topics meet the current mastery target.",
     submissionCount: submissions.length,
     features,
   };

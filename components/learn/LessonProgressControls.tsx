@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, Play } from "lucide-react";
 import { completeLessonAction, recordLessonVisitAction } from "@/app/(dashboard)/learn/actions";
 import { Button } from "@/components/ui/Button";
@@ -15,6 +16,7 @@ export function LessonProgressControls({
   lessonId,
   initialStatus,
 }: LessonProgressControlsProps) {
+  const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -40,7 +42,7 @@ export function LessonProgressControls({
     return () => {
       active = false;
     };
-  }, [lessonId]);
+  }, [lessonId, router]);
 
   function resumeLesson() {
     startTransition(async () => {
@@ -65,6 +67,7 @@ export function LessonProgressControls({
         if (result.success) {
           setStatus(result.status);
           setError(null);
+          router.refresh();
         } else {
           setError(result.error);
         }

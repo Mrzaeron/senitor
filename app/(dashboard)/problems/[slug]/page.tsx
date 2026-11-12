@@ -232,7 +232,7 @@ async function ProblemDetails({
             />
             <LearningInsights
               problemId={problem.id}
-              submissionVersion={history.length}
+              submissionVersion={history[0]?.id ?? String(history.length)}
             />
           </aside>
         </div>

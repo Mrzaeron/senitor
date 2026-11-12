@@ -8,7 +8,10 @@ import { Card } from "@/components/ui/Card";
 type LearningInsightsData = {
   syntheticDemo: true;
   model: string;
-  probability: number;
+  probability: number | null;
+  prediction: {
+    explanation: string;
+  };
   topicMastery: Array<{ slug: string; name: string; mastery: number }>;
   weakTopics: Array<{ slug: string; name: string; mastery: number }>;
   recommendedNextTopic: { slug: string; name: string; mastery: number } | null;
@@ -33,7 +36,7 @@ export function LearningInsights({
   submissionVersion,
 }: {
   problemId: string;
-  submissionVersion: number;
+  submissionVersion: string;
 }) {
   const requestKey = `${problemId}:${submissionVersion}`;
   const [loadState, setLoadState] = useState<LoadState | null>(null);
@@ -113,11 +116,13 @@ export function LearningInsights({
               Problem-solving probability · {currentState.data.model}
             </p>
             <p className="mt-1 text-2xl font-bold text-text-primary">
-              {Math.round(currentState.data.probability * 100)}%
+              {currentState.data.probability === null
+                ? "Not enough data"
+                : `${Math.round(currentState.data.probability * 100)}%`}
             </p>
             <p className="mt-1 text-xs text-text-secondary">
-              Based on {currentState.data.submissionCount} recent submissions. This estimate
-              uses a model trained only on synthetic data.
+              {currentState.data.prediction.explanation} This estimate uses a model
+              trained only on synthetic data.
             </p>
           </div>
 

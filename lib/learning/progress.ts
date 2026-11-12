@@ -15,6 +15,7 @@ import {
 import type {
   LastLearningPosition,
   LessonProgress,
+  LessonProgressStatus,
   OverallLearningProgress,
   SubtopicProgressSummary,
   TopicProgressSummary,
@@ -147,6 +148,68 @@ async function getPublishedLessonPosition(
     topic_name: topic.name,
     topic_slug: topic.slug,
   };
+}
+
+async function assertSubtopicPrerequisitesComplete(
+  supabase: ProgressClient,
+  userId: string,
+  subtopicId: string
+): Promise<void> {
+  const { data: prerequisites, error } = await supabase
+    .from("subtopic_prerequisites")
+    .select("prerequisite_subtopic_id")
+    .eq("subtopic_id", subtopicId);
+
+  if (error) throwQueryError("loading lesson prerequisites", error);
+  const prerequisiteIds = (prerequisites ?? []).map(
+    (prerequisite) => prerequisite.prerequisite_subtopic_id as string
+  );
+  if (prerequisiteIds.length === 0) return;
+
+  const prerequisiteLessons = await getLessonRows(supabase, prerequisiteIds);
+  const progressRows = await getProgressRows(
+    supabase,
+    userId,
+    prerequisiteLessons
+  );
+  const progressByLesson = new Map(
+    progressRows.map((progress) => [progress.lesson_id, progress])
+  );
+  const allComplete = prerequisiteIds.every((prerequisiteId) => {
+    const lessons = prerequisiteLessons.filter(
+      (lesson) => lesson.subtopic_id === prerequisiteId
+    );
+    return (
+      lessons.length > 0 &&
+      lessons.every(
+        (lesson) => progressByLesson.get(lesson.id)?.status === "completed"
+      )
+    );
+  });
+
+  if (!allComplete) {
+    throw new LearningProgressError(
+      "Complete the prerequisite lessons before starting this lesson."
+    );
+  }
+}
+
+export async function areSubtopicPrerequisitesComplete(
+  subtopicId: string
+): Promise<boolean> {
+  const { supabase, userId } = await getVerifiedClient();
+  try {
+    await assertSubtopicPrerequisitesComplete(supabase, userId, subtopicId);
+    return true;
+  } catch (error) {
+    if (
+      error instanceof LearningProgressError &&
+      error.message.includes("prerequisite")
+    ) {
+      return false;
+    }
+    throw error;
+  }
 }
 
 async function getLessonRows(
@@ -312,6 +375,11 @@ export async function completeLesson(
     throw new LearningProgressError("This lesson is unavailable.");
   }
 
+  await assertSubtopicPrerequisitesComplete(
+    supabase,
+    userId,
+    position.subtopic_id
+  );
   return completeLessonForUser(supabase, userId, lessonId);
 }
 
@@ -324,6 +392,11 @@ export async function recordLessonVisit(
     throw new LearningProgressError("This lesson is unavailable.");
   }
 
+  await assertSubtopicPrerequisitesComplete(
+    supabase,
+    userId,
+    position.subtopic_id
+  );
   const progress = await setLessonInProgress(supabase, userId, lessonId);
   const { error } = await supabase.from("user_learning_state").upsert(
     {
@@ -361,6 +434,18 @@ export async function getSubtopicProgress(
     subtopic_id: subtopicId,
     ...countLessonProgress(lessons, progressRows),
   };
+}
+
+export async function getSubtopicLessonStatuses(
+  subtopicId: string
+): Promise<Record<string, LessonProgressStatus>> {
+  const { supabase, userId } = await getVerifiedClient();
+  const lessons = await getLessonRows(supabase, [subtopicId]);
+  const progressRows = await getProgressRows(supabase, userId, lessons);
+
+  return Object.fromEntries(
+    progressRows.map((progress) => [progress.lesson_id, progress.status])
+  );
 }
 
 export async function getTopicProgress(

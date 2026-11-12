@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  Circle,
+} from "lucide-react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Card } from "@/components/ui/Card";
@@ -22,6 +28,8 @@ import {
 } from "@/lib/curriculum/data";
 import {
   getSubtopicProgress,
+  getSubtopicLessonStatuses,
+  areSubtopicPrerequisitesComplete,
   LearningProgressError,
 } from "@/lib/learning/progress";
 
@@ -50,9 +58,10 @@ async function SubtopicContent({ params }: SubtopicPageProps) {
     );
   }
 
-  const { context, lessons, prerequisites, progress } = result;
+  const { context, lessons, lessonStatuses, prerequisites, progress } = result;
   if (!context) notFound();
   if (!progress) notFound();
+  const prerequisitesComplete = result.prerequisitesComplete;
 
   return (
     <div className="flex flex-col gap-6">
@@ -99,7 +108,12 @@ async function SubtopicContent({ params }: SubtopicPageProps) {
             {lessons.length} {lessons.length === 1 ? "lesson" : "lessons"}
           </span>
         </div>
-        {lessons.length === 0 ? (
+        {!prerequisitesComplete ? (
+          <CurriculumEmptyState
+            title="Complete prerequisites first"
+            message="Finish every lesson in the prerequisite concepts below before starting this section."
+          />
+        ) : lessons.length === 0 ? (
           <CurriculumEmptyState
             title="Lessons coming soon"
             message="There are no published lessons for this concept yet."
@@ -114,14 +128,29 @@ async function SubtopicContent({ params }: SubtopicPageProps) {
                 >
                   <Card className="flex items-center gap-4 p-4 transition-colors group-hover:border-border-accent md:p-5">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-subtle text-accent-secondary">
-                      <BookOpen size={17} aria-hidden />
+                      {lessonStatuses[lesson.id] === "completed" ? (
+                        <CheckCircle2 size={17} className="text-success" aria-hidden />
+                      ) : lessonStatuses[lesson.id] === "in_progress" ? (
+                        <BookOpen size={17} aria-hidden />
+                      ) : (
+                        <Circle size={17} aria-hidden />
+                      )}
                     </span>
                     <div className="min-w-0 flex-1">
                       <h4 className="font-semibold text-text-primary group-hover:text-accent-secondary">
                         {index + 1}. {lesson.title}
                       </h4>
                       <div className="mt-2">
-                        <EstimatedTime minutes={lesson.estimated_minutes} />
+                        <div className="flex flex-wrap items-center gap-3">
+                          <EstimatedTime minutes={lesson.estimated_minutes} />
+                          <span className="text-xs text-text-muted">
+                            {lessonStatuses[lesson.id] === "completed"
+                              ? "Completed"
+                              : lessonStatuses[lesson.id] === "in_progress"
+                                ? "In progress"
+                                : "Not started"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <ArrowRight
@@ -200,13 +229,24 @@ async function loadSubtopic(params: SubtopicPageProps["params"]) {
       };
     }
 
-    const [lessons, prerequisites, progress] = await Promise.all([
+    const [lessons, lessonStatuses, prerequisites, progress] = await Promise.all([
       getSubtopicLessons(context.subtopic.id),
+      getSubtopicLessonStatuses(context.subtopic.id),
       getSubtopicPrerequisites(context.subtopic.id),
       getSubtopicProgress(context.subtopic.id),
     ]);
+    const prerequisitesComplete = await areSubtopicPrerequisitesComplete(
+      context.subtopic.id
+    );
 
-    return { context, lessons, prerequisites, progress };
+    return {
+      context,
+      lessons,
+      lessonStatuses,
+      prerequisites,
+      progress,
+      prerequisitesComplete,
+    };
   } catch (error) {
     if (error instanceof CurriculumDataError) {
       return { error: error.message, errorType: "curriculum" };

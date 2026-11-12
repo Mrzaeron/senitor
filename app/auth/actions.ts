@@ -52,56 +52,66 @@ export async function loginAction(data: LoginInput): Promise<ActionResult> {
     };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
-    password: parsed.data.password,
-  });
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: parsed.data.email,
+      password: parsed.data.password,
+    });
 
-  if (error) {
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+
+    // Check onboarding status
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError) {
+      logSupabaseQueryError("authentication", "loading the signed-in user", userError);
+      return {
+        success: false,
+        error: "Your session could not be verified. Please try signing in again.",
+      };
+    }
+    if (!user) {
+      return {
+        success: false,
+        error: "Your session could not be verified. Please try signing in again.",
+      };
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      logSupabaseQueryError("authentication", "checking onboarding status", profileError);
+      return {
+        success: false,
+        error: "Your account setup could not be verified. Please try again.",
+      };
+    }
+
+    if (!profile?.onboarding_completed) {
+      return {
+        success: true,
+        data: { redirectTo: "/onboarding" },
+      };
+    }
+  } catch (error) {
+    console.error("[authentication] login action failed unexpectedly", {
+      name: error instanceof Error ? error.name : "UnknownError",
+    });
     return {
       success: false,
-      error: error.message,
-    };
-  }
-
-  // Check onboarding status
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError) {
-    logSupabaseQueryError("authentication", "loading the signed-in user", userError);
-    return {
-      success: false,
-      error: "Your session could not be verified. Please try signing in again.",
-    };
-  }
-  if (!user) {
-    return {
-      success: false,
-      error: "Your session could not be verified. Please try signing in again.",
-    };
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("onboarding_completed")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileError) {
-    logSupabaseQueryError("authentication", "checking onboarding status", profileError);
-    return {
-      success: false,
-      error: "Your account setup could not be verified. Please try again.",
-    };
-  }
-
-  if (!profile?.onboarding_completed) {
-    return {
-      success: true,
-      data: { redirectTo: "/onboarding" },
+      error: "Sign in could not be completed. Please try again.",
     };
   }
 

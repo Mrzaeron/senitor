@@ -3,6 +3,7 @@ import {
   AIProviderConfigurationError,
   AIProviderRequestError,
   generateTutorReply,
+  type AIProviderErrorCategory,
   type TutorMessage,
   type TutorMode,
 } from "@/lib/ai/provider";
@@ -13,6 +14,7 @@ import { getLearningInsights } from "@/lib/learning/insights";
 const modes = new Set<TutorMode>(["learn", "hint", "debug", "practice", "explain"]);
 const maxMessageLength = 4000;
 const maxHistoryLength = 12;
+const learningContextTimeoutMs = 3000;
 
 type TutorRequest = {
   mode?: TutorMode;
@@ -42,6 +44,15 @@ function validHistory(history: unknown): history is TutorMessage[] {
         item.content.length <= maxMessageLength
     )
   );
+}
+
+async function loadLearningContext() {
+  return Promise.race([
+    getLearningInsights().catch(() => null),
+    new Promise<null>((resolve) =>
+      setTimeout(() => resolve(null), learningContextTimeoutMs)
+    ),
+  ]);
 }
 
 export async function POST(request: NextRequest) {
@@ -82,7 +93,7 @@ export async function POST(request: NextRequest) {
       .select("programming_language")
       .eq("id", authenticated.userId)
       .maybeSingle(),
-    getLearningInsights().catch(() => null),
+    loadLearningContext(),
   ]);
   if (profileResult.error) {
     return responseError("Your tutor context could not be loaded. Please try again.", 500);
@@ -108,10 +119,20 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof AIProviderConfigurationError) return responseError(error.message, 503);
     if (error instanceof AIProviderRequestError) {
-      return responseError(error.message, 502);
-    }
-    if (error instanceof Error && error.name === "TimeoutError") {
-      return responseError("The AI Tutor took too long to respond. Please try again.", 504);
+      const status =
+        error.category === "timeout"
+          ? 504
+          : error.category === "authentication"
+            ? 502
+            : error.category === "quota"
+              ? 429
+              : error.category === "invalid_model" || error.category === "invalid_request"
+                ? 502
+                : 503;
+      return NextResponse.json(
+        { error: error.message, category: error.category satisfies AIProviderErrorCategory },
+        { status, headers: { "Cache-Control": "no-store" } }
+      );
     }
     throw error;
   }

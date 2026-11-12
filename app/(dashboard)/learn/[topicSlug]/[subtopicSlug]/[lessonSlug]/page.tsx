@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Card } from "@/components/ui/Card";
 import {
+  CurriculumEmptyState,
   CurriculumErrorState,
   CurriculumLoadingState,
   EstimatedTime,
@@ -20,6 +21,7 @@ import {
   getSubtopicLessons,
 } from "@/lib/curriculum/data";
 import {
+  areSubtopicPrerequisitesComplete,
   getLessonProgress,
   LearningProgressError,
 } from "@/lib/learning/progress";
@@ -55,6 +57,14 @@ async function LessonContentPage({ params }: LessonPageProps) {
 
   const { context, lessons, progress } = result;
   if (!context) notFound();
+  if (!result.prerequisitesComplete) {
+    return (
+      <CurriculumEmptyState
+        title="Complete prerequisites first"
+        message="Finish the prerequisite lessons before opening this lesson."
+      />
+    );
+  }
 
   const lessonIndex = lessons.findIndex(
     (lesson) => lesson.id === context.lesson.id
@@ -196,11 +206,12 @@ async function loadLesson(params: LessonPageProps["params"]) {
     );
     if (!context) return { context: null, lessons: [] };
 
-    const [lessons, progress] = await Promise.all([
+    const [lessons, progress, prerequisitesComplete] = await Promise.all([
       getSubtopicLessons(context.subtopic.id),
       getLessonProgress(context.lesson.id),
+      areSubtopicPrerequisitesComplete(context.subtopic.id),
     ]);
-    return { context, lessons, progress };
+    return { context, lessons, progress, prerequisitesComplete };
   } catch (error) {
     if (error instanceof CurriculumDataError) {
       return { error: error.message, errorType: "curriculum" };
