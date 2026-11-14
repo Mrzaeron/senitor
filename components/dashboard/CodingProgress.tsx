@@ -51,7 +51,10 @@ export async function CodingProgress() {
     { label: "Submissions", value: progress.totals.submissions, icon: Code2 },
     {
       label: "Acceptance rate",
-      value: `${progress.totals.acceptanceRate.toFixed(1)}%`,
+      value:
+        progress.totals.judged > 0
+          ? `${progress.totals.acceptanceRate.toFixed(1)}%`
+          : "No data",
       icon: Gauge,
     },
   ];
@@ -80,6 +83,7 @@ export async function CodingProgress() {
       <ActivityHeatmap
         timestamps={progress.activity}
         hasSubmissions={progress.totals.submissions > 0}
+        today={new Date().toISOString().slice(0, 10)}
       />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">

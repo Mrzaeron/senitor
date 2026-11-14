@@ -16,6 +16,8 @@ import type {
 } from "@/types/problems";
 
 const maximumSourceLength = 50_000;
+const executionQuotaMessage =
+  "You have reached the code execution limit. Please wait a minute and try again.";
 
 export class ProblemSubmissionError extends Error {
   constructor(message: string) {
@@ -100,6 +102,26 @@ async function getPublishedProblem(
   };
 }
 
+async function consumeExecutionQuota(
+  supabase: AuthenticatedClient["supabase"],
+  userId: string,
+  action: "run" | "submit"
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("consume_code_execution_quota", {
+    p_user_id: userId,
+    p_action: action,
+  });
+  if (error) {
+    console.error("[problem-submissions] execution quota check failed", {
+      code: error.code,
+    });
+    throw new ProblemSubmissionError(
+      "Code execution protection is not available. Please try again later."
+    );
+  }
+  return data === true;
+}
+
 function formatExecutionError(error: unknown): string {
   if (error instanceof Judge0UnavailableError) return error.message;
   return "Code execution failed. Please try again later.";
@@ -128,7 +150,7 @@ export async function runProblemSamples(
   }
 
   try {
-    const { supabase } = await getAuthenticatedClient();
+    const { supabase, userId } = await getAuthenticatedClient();
     const problem = await getPublishedProblem(supabase, slug);
     if (!problem) {
       return { success: false, message: "This published problem was not found." };
@@ -141,6 +163,9 @@ export async function runProblemSamples(
     }
     if (problem.examples.length === 0) {
       return { success: false, message: "This problem has no sample cases." };
+    }
+    if (!(await consumeExecutionQuota(supabase, userId, "run"))) {
+      return { success: false, message: executionQuotaMessage };
     }
 
     const results: SampleExecutionResult[] = [];
@@ -229,6 +254,17 @@ export async function submitProblem(
       success: false,
       message: "This language is not enabled for the selected problem.",
     };
+  }
+
+  try {
+    if (!(await consumeExecutionQuota(supabase, userId, "submit"))) {
+      return { success: false, message: executionQuotaMessage };
+    }
+  } catch (error) {
+    if (error instanceof ProblemSubmissionError) {
+      return { success: false, message: error.message };
+    }
+    throw error;
   }
 
   let admin: ReturnType<typeof createAdminClient>;

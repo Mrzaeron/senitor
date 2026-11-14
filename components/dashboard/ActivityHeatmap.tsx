@@ -12,7 +12,7 @@ const intensityClasses = [
 ];
 
 function localDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return date.toISOString().slice(0, 10);
 }
 
 function intensity(count: number): number {
@@ -26,9 +26,11 @@ function intensity(count: number): number {
 export function ActivityHeatmap({
   timestamps,
   hasSubmissions,
+  today,
 }: {
   timestamps: string[];
   hasSubmissions: boolean;
+  today: string;
 }) {
   const { weeks, total } = useMemo(() => {
     const counts = new Map<string, number>();
@@ -37,11 +39,10 @@ export function ActivityHeatmap({
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const start = new Date(today);
-    start.setDate(start.getDate() - 363);
-    start.setDate(start.getDate() - start.getDay());
+    const end = new Date(`${today}T00:00:00.000Z`);
+    const start = new Date(end);
+    start.setUTCDate(start.getUTCDate() - 363);
+    start.setUTCDate(start.getUTCDate() - start.getUTCDay());
     const result: Array<Array<{ date: Date; count: number }>> = [];
     let activeDays = 0;
 
@@ -49,7 +50,7 @@ export function ActivityHeatmap({
       const days = [];
       for (let weekday = 0; weekday < 7; weekday += 1) {
         const date = new Date(start);
-        date.setDate(start.getDate() + week * 7 + weekday);
+        date.setUTCDate(start.getUTCDate() + week * 7 + weekday);
         const count = counts.get(localDateKey(date)) ?? 0;
         if (count > 0) activeDays += 1;
         days.push({ date, count });
@@ -57,7 +58,7 @@ export function ActivityHeatmap({
       result.push(days);
     }
     return { weeks: result, total: activeDays };
-  }, [timestamps]);
+  }, [timestamps, today]);
 
   return (
     <section className="rounded-xl border border-border bg-bg-card p-4 sm:p-5">
@@ -103,12 +104,8 @@ export function ActivityHeatmap({
                 {weeks.flatMap((week, weekIndex) =>
                   week.map(({ date, count }) => {
                     const key = localDateKey(date);
-                    const label = date.toLocaleDateString(undefined, {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    });
-                    const inFuture = date > new Date();
+                    const label = date.toISOString().slice(0, 10);
+                    const inFuture = key > today;
                     return (
                       <span
                         key={`${weekIndex}-${key}`}

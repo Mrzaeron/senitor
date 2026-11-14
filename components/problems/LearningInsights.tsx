@@ -12,9 +12,27 @@ type LearningInsightsData = {
   prediction: {
     explanation: string;
   };
-  topicMastery: Array<{ slug: string; name: string; mastery: number }>;
-  weakTopics: Array<{ slug: string; name: string; mastery: number }>;
-  recommendedNextTopic: { slug: string; name: string; mastery: number } | null;
+  topicMastery: Array<{
+    slug: string;
+    name: string;
+    mastery: number | null;
+    attempts: number;
+    accuracy: number;
+  }>;
+  weakTopics: Array<{
+    slug: string;
+    name: string;
+    mastery: number;
+    attempts: number;
+    accuracy: number;
+  }>;
+  recommendedNextTopic: {
+    slug: string;
+    name: string;
+    mastery: number;
+    attempts: number;
+    accuracy: number;
+  } | null;
   recommendedProblems: Array<{
     id: string;
     slug: string;
@@ -139,22 +157,31 @@ export function LearningInsights({
                   <div className="mb-1 flex justify-between gap-2 text-xs">
                     <span className="truncate text-text-secondary">{topic.name}</span>
                     <span className="text-text-muted">
-                      {Math.round(topic.mastery * 100)}%
+                      {topic.mastery === null || topic.attempts === 0
+                        ? "Not attempted"
+                        : `${Math.round(topic.mastery * 100)}%`}
                     </span>
                   </div>
-                  <div
-                    className="h-1.5 overflow-hidden rounded-full bg-bg-overlay"
-                    role="progressbar"
-                    aria-label={`${topic.name} mastery`}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={Math.round(topic.mastery * 100)}
-                  >
+                  {topic.mastery !== null && topic.attempts > 0 && (
                     <div
-                      className="h-full rounded-full bg-accent-primary"
-                      style={{ width: `${topic.mastery * 100}%` }}
-                    />
-                  </div>
+                      className="h-1.5 overflow-hidden rounded-full bg-bg-overlay"
+                      role="progressbar"
+                      aria-label={`${topic.name} mastery`}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.round(topic.mastery * 100)}
+                    >
+                      <div
+                        className="h-full rounded-full bg-accent-primary"
+                        style={{ width: `${topic.mastery * 100}%` }}
+                      />
+                    </div>
+                  )}
+                  <p className="mt-1 text-[11px] text-text-muted">
+                    {topic.attempts
+                      ? `${Math.round(topic.accuracy * 100)}% accuracy · ${topic.attempts} attempts`
+                      : "No judged attempts yet"}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -168,10 +195,10 @@ export function LearningInsights({
                     .slice(0, 4)
                     .map(
                       (topic) =>
-                        `${topic.name} (${Math.round(topic.mastery * 100)}%)`
+                        `${topic.name} (${topic.attempts} attempts, ${Math.round(topic.accuracy * 100)}% accuracy)`
                     )
                     .join(" · ")
-                : "No topics are currently below the mastery target."}
+                : "No weak topics with judged attempts yet."}
             </p>
           </section>
 

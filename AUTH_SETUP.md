@@ -48,6 +48,7 @@ For local development, Supabase applies files in filename order after migrations
 9. `supabase/migrations/20261106190001_simplify_profile_onboarding.sql`
 10. `supabase/migrations/20261106190002_read_own_submitted_problems.sql`
 11. `supabase/migrations/20261110142000_reconcile_profile_onboarding.sql`
+12. `supabase/migrations/20261114000000_add_code_execution_rate_limits.sql`
 
 Do not run `supabase/schema.sql` as well as the initial profiles migration; it is an alternative initial profiles setup. If PostgREST still reports a table missing after applying migrations, refresh its schema cache from the SQL Editor with `NOTIFY pgrst, 'reload schema';` and retry.
 
@@ -82,6 +83,26 @@ Set these server-side environment variables before enabling Run or Submit:
 - `JUDGE0_API_HOST` — set to `judge0-ce.p.rapidapi.com`. The execution URL is fixed in server code; clients cannot choose an execution-service URL.
 
 Without Judge0 credentials, the editor, local drafts, and submission history remain available, while code execution reports a configuration message.
+
+### Production problem-bank deployment
+
+The local reset seed configuration loads 30 baseline problems followed by the
+70-problem expansion. A hosted database must be checked and updated separately:
+
+1. Inspect the current schema and take a database backup according to your
+   deployment policy.
+2. Run `supabase/deploy_problem_bank.sql` in the hosted Supabase SQL Editor or
+   through the reviewed production database workflow. This script uses the
+   existing `problems.slug`, `problem_test_cases_problem_order_unique`,
+   `tags.slug`, and `problem_tag_relations_pk` conflict keys, so rerunning it
+   updates the intended records without duplicating them.
+3. Run `supabase/verify_problem_bank.sql` and confirm `total = 100`,
+   `easy = 40`, `medium = 40`, and `hard = 20`.
+
+Do not run `supabase db reset`, delete rows, or apply this deployment script
+automatically from the application. The repository cannot claim that production
+contains 100 problems until the verification query has been run against the
+hosted database.
 
 ---
 

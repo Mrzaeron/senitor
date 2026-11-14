@@ -19,6 +19,15 @@ function percentage(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function masteryLabel(topic: {
+  mastery: number | null;
+  attempts: number;
+  accuracy: number;
+}): string {
+  if (topic.attempts === 0 || topic.mastery === null) return "Not attempted";
+  return topic.mastery >= 0.7 ? "Strong" : "Needs practice";
+}
+
 function PerformanceBars({
   values,
   emptyMessage,
@@ -44,11 +53,19 @@ function PerformanceBars({
               {value.attempts ? `${percentage(value.accuracy)} · ${value.attempts} attempts` : "No attempts"}
             </span>
           </div>
-          <Progress
-            value={value.accuracy * 100}
-            label={`${value.label} accuracy`}
-            variant={value.accuracy >= 0.7 ? "success" : value.accuracy >= 0.4 ? "warning" : "error"}
-          />
+          {value.attempts > 0 && (
+            <Progress
+              value={value.accuracy * 100}
+              label={`${value.label} accuracy`}
+              variant={
+                value.accuracy >= 0.7
+                  ? "success"
+                  : value.accuracy >= 0.4
+                    ? "warning"
+                    : "error"
+              }
+            />
+          )}
         </div>
       ))}
     </div>
@@ -73,7 +90,10 @@ export async function LearningInsightsDashboard() {
   const statCards = [
     ["Attempted problems", analytics.attemptedProblems],
     ["Successful submissions", analytics.successfulSubmissions],
-    ["Accuracy", percentage(analytics.accuracy)],
+    [
+      "Accuracy",
+      analytics.judgedSubmissions > 0 ? percentage(analytics.accuracy) : "No data yet",
+    ],
     ["Lessons completed", analytics.lessonActivity.completedLessons],
   ];
 
@@ -121,17 +141,37 @@ export async function LearningInsightsDashboard() {
                 <div className="mb-1 flex justify-between gap-3 text-xs">
                   <span className="truncate text-text-secondary group-hover:text-accent-secondary">{topic.name}</span>
                   <span className="flex shrink-0 items-center gap-2 text-[11px]">
-                    <span className={topic.mastery >= 0.7 ? "text-success" : "text-warning"}>
-                      {topic.mastery >= 0.7 ? "Strong" : "Needs practice"}
+                    <span
+                      className={
+                        topic.mastery === null
+                          ? "text-text-muted"
+                          : topic.mastery >= 0.7
+                            ? "text-success"
+                            : "text-warning"
+                      }
+                    >
+                      {masteryLabel(topic)}
                     </span>
-                    <span className="tabular-nums text-text-muted">{percentage(topic.mastery)}</span>
+                    {topic.mastery !== null && (
+                      <span className="tabular-nums text-text-muted">
+                        {percentage(topic.mastery)}
+                      </span>
+                    )}
                   </span>
                 </div>
-                <Progress
-                  value={topic.mastery * 100}
-                  label={`${topic.name} mastery`}
-                  variant={topic.mastery >= 0.7 ? "success" : topic.mastery >= 0.4 ? "warning" : "error"}
-                />
+                {topic.mastery !== null && topic.attempts > 0 && (
+                  <Progress
+                    value={topic.mastery * 100}
+                    label={`${topic.name} mastery`}
+                    variant={
+                      topic.mastery >= 0.7
+                        ? "success"
+                        : topic.mastery >= 0.4
+                          ? "warning"
+                          : "error"
+                    }
+                  />
+                )}
                 <p className="mt-1 text-[11px] text-text-muted">
                   {topic.attempts
                     ? `${percentage(topic.accuracy)} accuracy · ${topic.attempts} attempts`
@@ -176,6 +216,31 @@ export async function LearningInsightsDashboard() {
             >
               Open topic <ArrowRight size={15} aria-hidden />
             </Link>
+          )}
+        </div>
+        <div className="mt-5">
+          <h3 className="text-sm font-semibold text-text-primary">Weak topics</h3>
+          <p className="mt-1 text-xs text-text-secondary">
+            Only topics with judged attempts are included.
+          </p>
+          {insights.weakTopics.length > 0 ? (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {insights.weakTopics.map((topic) => (
+                <li
+                  key={topic.slug}
+                  className="rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-secondary"
+                >
+                  <span className="font-medium text-text-primary">{topic.name}</span>
+                  <span className="ml-2">
+                    {topic.attempts} attempts · {percentage(topic.accuracy)} accuracy
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-sm text-text-muted">
+              No weak topics with judged attempts yet.
+            </p>
           )}
         </div>
         {insights.recommendedProblems.length > 0 ? (

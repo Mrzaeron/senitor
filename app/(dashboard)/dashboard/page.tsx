@@ -14,6 +14,7 @@ import {
 import { measureServerData } from "@/lib/supabase/diagnostics";
 import {
   ArrowRight,
+  BrainCircuit,
   BookOpen,
 } from "lucide-react";
 import {
@@ -36,6 +37,28 @@ export default function DashboardPage() {
           Track your problem-solving progress and keep building your DSA skills.
         </p>
       </header>
+
+      <Card className="border-border bg-bg-card shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2 text-accent-secondary">
+            <BrainCircuit size={17} aria-hidden />
+            <CardTitle className="text-base font-semibold">
+              Learning Insights
+            </CardTitle>
+          </div>
+          <CardDescription>
+            Review your attempts, accuracy, topic mastery, recent trend, and lesson completion.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href="/progress"
+            className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-accent-secondary hover:text-text-primary"
+          >
+            Open Learning Insights <ArrowRight size={16} aria-hidden />
+          </Link>
+        </CardContent>
+      </Card>
 
       <Suspense fallback={<CodingProgressFallback />}>
         <CodingProgress />

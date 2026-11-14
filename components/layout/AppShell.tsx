@@ -13,6 +13,11 @@ export interface AppShellProps {
   children: React.ReactNode;
 }
 
+type ProfileIdentity = {
+  full_name: string | null;
+  avatar_path?: string | null;
+};
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function AppShell({ children }: AppShellProps) {
@@ -31,17 +36,31 @@ export function AppShell({ children }: AppShellProps) {
       if (error) throw error;
       if (!active || !data.user) return;
       const { user } = data;
-      const { data: profile, error: profileError } = await supabase
+      const profileResult = await supabase
         .from("profiles")
         .select("full_name, avatar_path")
         .eq("id", user.id)
         .maybeSingle();
-      if (profileError) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("[navigation] profile identity lookup failed", {
-            code: profileError.code,
-          });
+      let profile: ProfileIdentity | null = profileResult.data as ProfileIdentity | null;
+      let profileError = profileResult.error;
+      if (profileError?.code === "42703") {
+        const fallback = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .maybeSingle();
+        profile = fallback.data;
+        profileError = fallback.error;
+        if (!fallback.error && process.env.NODE_ENV === "development") {
+          console.warn(
+            "[navigation] avatar_path is unavailable; using profile identity without an avatar"
+          );
         }
+      }
+      if (profileError) {
+        console.error("[navigation] profile identity lookup failed", {
+          code: profileError.code,
+        });
       }
       const metadataName = user.user_metadata?.full_name;
       setUserName(

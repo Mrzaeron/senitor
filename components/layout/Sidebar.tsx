@@ -33,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Learn DSA",  href: "/learn",     icon: <BookOpen        size={18} /> },
   { label: "Problems",   href: "/problems",  icon: <Code2           size={18} /> },
   { label: "AI Tutor",   href: "/ai-tutor",  icon: <BrainCircuit    size={18} /> },
-  { label: "Progress",   href: "/progress",  icon: <TrendingUp      size={18} /> },
+  { label: "Learning Insights", href: "/progress", icon: <TrendingUp size={18} /> },
   { label: "Profile",    href: "/profile",   icon: <User            size={18} /> },
 ];
 

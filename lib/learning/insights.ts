@@ -45,11 +45,13 @@ type LessonProgressRow = {
 export type InsightTopic = {
   slug: string;
   name: string;
-  mastery: number;
+  mastery: number | null;
   attempts: number;
   successful: number;
   accuracy: number;
 };
+
+type MeasuredInsightTopic = InsightTopic & { mastery: number };
 
 export type InsightPerformance = {
   label: string;
@@ -233,20 +235,28 @@ export async function getLearningInsights(
     outcomesByDifficulty.set(problem.difficulty, difficultyOutcomes);
   }
 
-  const topicPerformance = topics.map((topic) => {
+  const topicPerformance: InsightTopic[] = topics.map((topic) => {
     const outcomes = outcomesByTopic.get(topic.id) ?? [];
     const successful = outcomes.filter(Boolean).length;
     return {
       slug: topic.slug,
       name: topic.name,
-      mastery: smoothedRate(successful, outcomes.length),
+      mastery:
+        outcomes.length === 0
+          ? null
+          : smoothedRate(successful, outcomes.length),
       attempts: outcomes.length,
       successful,
       accuracy: clampRate(successful, outcomes.length),
     };
   });
   const weakTopics = topicPerformance
-    .filter((topic) => topic.mastery < completionTarget)
+    .filter(
+      (topic): topic is MeasuredInsightTopic =>
+        topic.attempts > 0 &&
+        topic.mastery !== null &&
+        topic.mastery < completionTarget
+    )
     .sort(
       (left, right) =>
         left.mastery - right.mastery ||
@@ -261,9 +271,14 @@ export async function getLearningInsights(
   );
   const eligibleTopics = weakTopics.filter((topic) => {
     const row = topics.find((candidate) => candidate.slug === topic.slug)!;
-    return [...(prerequisitesByTopic.get(row.id) ?? [])].every(
-      (id) => (masteryByTopicId.get(id) ?? 0.5) >= prerequisiteThreshold
-    );
+    return [...(prerequisitesByTopic.get(row.id) ?? [])].every((id) => {
+      const mastery = masteryByTopicId.get(id);
+      return (
+        mastery !== null &&
+        mastery !== undefined &&
+        mastery >= prerequisiteThreshold
+      );
+    });
   });
   const nextTopic = eligibleTopics[0] ?? null;
   const nextTopicRow = nextTopic
@@ -362,7 +377,9 @@ export async function getLearningInsights(
     const relatedTopicIds = [
       ...(prerequisitesByTopic.get(predictionProblem.topic_id) ?? []),
     ];
-    const relatedValues = relatedTopicIds.map((id) => masteryByTopicId.get(id) ?? 0.5);
+    const relatedValues = relatedTopicIds
+      .map((id) => masteryByTopicId.get(id))
+      .filter((value): value is number => value !== null && value !== undefined);
     features = {
       previous_accuracy: smoothedRate(
         judged.filter((submission) => submission.status === "accepted").length,
@@ -418,6 +435,8 @@ export async function getLearningInsights(
       ? `${nextTopic.name} is the weakest topic currently eligible under the curriculum prerequisites.`
       : weakTopics.length > 0
         ? "No weak topic is currently eligible. Complete the required prerequisite topics before continuing."
+        : judged.length === 0
+          ? "Submit a judged solution to start building topic mastery and recommendations."
         : "All available topics meet the current mastery target.",
     submissionCount: submissions.length,
     features,

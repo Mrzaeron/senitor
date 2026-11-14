@@ -99,7 +99,7 @@ export const MobileNav = memo(function MobileNav({
     { label: "Home", href: "/dashboard", icon: <LayoutDashboard size={18} aria-hidden /> },
     { label: "Learn", href: "/learn", icon: <BookOpen size={18} aria-hidden /> },
     { label: "Problems", href: "/problems", icon: <Code2 size={18} aria-hidden /> },
-    { label: "Progress", href: "/progress", icon: <TrendingUp size={18} aria-hidden /> },
+    { label: "Learning Insights", href: "/progress", icon: <TrendingUp size={18} aria-hidden /> },
     { label: "Profile", href: "/profile", icon: <User size={18} aria-hidden /> },
   ];
 
